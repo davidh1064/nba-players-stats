@@ -13,4 +13,5 @@ Features
 - CRUD Operations: Implements REST endpoints for creating, reading, updating, and deleting player records.
 
 Example:
+
 ![image](https://github.com/user-attachments/assets/afb38308-4bc3-41b0-a51d-94118bfc92bd)
