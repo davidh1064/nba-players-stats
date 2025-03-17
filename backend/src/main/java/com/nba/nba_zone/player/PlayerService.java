@@ -38,8 +38,16 @@ public class PlayerService {
     public List<Player> getPlayersByNameAndTeam(String playerName, String teamName) {
         return playerRepository.findAll().stream()
                 .filter(player -> teamName.equals(player.getTeamAbbreviation())
-                        && playerName.equals(player.getPlayerName()))
+                        && player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()))
                 .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByNameAndSeason(String playerName, String season) {
+        return playerRepository.findAll().stream()
+                .filter(player ->  player.getPlayerName().toLowerCase().contains(playerName.toLowerCase())
+                    && season.equals(player.getSeason()))
+                .collect(Collectors.toList());
+
     }
 
     public List<Player> getPlayersByCollege(String college) {
