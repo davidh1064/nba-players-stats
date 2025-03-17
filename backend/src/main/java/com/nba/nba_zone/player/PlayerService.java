@@ -19,7 +19,7 @@ public class PlayerService {
         return playerRepository.findAll();
     }
 
-    private Player getPlayerById(Long id) {
+    public Player getPlayerById(Long id) {
         return playerRepository.findById(id).orElse(null);
     }
 
@@ -35,11 +35,30 @@ public class PlayerService {
                 .collect(Collectors.toList());
     }
 
-    private Player addPlayer(Player player) {
+    public List<Player> getPlayersByNameAndTeam(String playerName, String teamName) {
+        return playerRepository.findAll().stream()
+                .filter(player -> teamName.equals(player.getTeamAbbreviation())
+                        && playerName.equals(player.getPlayerName()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByCollege(String college) {
+        return playerRepository.findAll().stream()
+                .filter(player -> college.equals(player.getCollege()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByCountry(String country) {
+        return playerRepository.findAll().stream()
+                .filter(player -> country.equals(player.getCountry()))
+                .collect(Collectors.toList());
+    }
+
+    public Player addPlayer(Player player) {
         return playerRepository.save(player);
     }
 
-    private Player updatePlayer(Long id, Player playerDetails) {
+    public Player updatePlayer(Long id, Player playerDetails) {
         Player existingPlayer = playerRepository.findPlayerById(id)
                 .orElseThrow(() -> new RuntimeException("Player not found"));
         existingPlayer.setPlayerName(playerDetails.getPlayerName());
@@ -67,7 +86,7 @@ public class PlayerService {
         return playerRepository.save(existingPlayer);
     }
 
-    private void deletePlayer(Long id) {
+    public void deletePlayer(Long id) {
         playerRepository.deletePlayerById(id);
     }
 }

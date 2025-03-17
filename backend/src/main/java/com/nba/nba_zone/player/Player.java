@@ -32,6 +32,8 @@ public class Player {
     private Float astPct;
     private String season;
 
+    public Player() {}
+
     public Player(String playerName, Long id, String teamAbbreviation, Float age, Float playerHeight, Float playerWeight, String college, String country, String draftYear, String draftRound, String draftNumber, Integer gp, Float pts, Float reb, Float ast, Float netRating, Float orebPct, Float drebPct, Float usgPct, Float tsPct, Float astPct, String season) {
         this.playerName = playerName;
         this.id = id;
