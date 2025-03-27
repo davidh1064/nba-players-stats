@@ -45,6 +45,9 @@ public class PlayerController {
         else if (country != null) {
             return playerService.getPlayersByCountry(country);
         }
+        else if (season != null) {
+            return playerService.getPlayersBySeason(season);
+        }
         else {
             return playerService.getPlayers();
         }

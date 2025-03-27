@@ -62,6 +62,12 @@ public class PlayerService {
                 .collect(Collectors.toList());
     }
 
+    public List<Player> getPlayersBySeason(String season) {
+        return playerRepository.findAll().stream()
+                .filter(player -> season.equals(player.getSeason()))
+                .collect(Collectors.toList());
+    }
+
     public Player addPlayer(Player player) {
         return playerRepository.save(player);
     }
