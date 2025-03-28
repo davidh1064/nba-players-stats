@@ -3,11 +3,8 @@
 import Link from "next/link";
 import {
   NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
 } from "@/components/ui/NavigationMenu";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -23,7 +20,7 @@ export function Navigation() {
     { href: "/seasons", label: "Seasons" },
     { href: "/players/search", label: "Player Search" },
   ];
-  
+
   return (
     <div className="border-b">
       <div className="container mx-auto px-4">

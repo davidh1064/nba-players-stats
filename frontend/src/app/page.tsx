@@ -1,9 +1,41 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { Users, Trophy, Globe, Calendar } from "lucide-react";
+import StatCard from "@/components/ui/StatCard";
 
 export default function HomePage() {
+  const stats = [
+    {
+      icon: Users,
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
+      value: "500+",
+      label: "Active Players",
+    },
+    {
+      icon: Trophy,
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600",
+      value: "30",
+      label: "NBA Teams",
+    },
+    {
+      icon: Globe,
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-600",
+      value: "40+",
+      label: "Countries",
+    },
+    {
+      icon: Calendar,
+      iconBg: "bg-orange-100",
+      iconColor: "text-orange-600",
+      value: "27",
+      label: "Seasons",
+    },
+  ];
+
   return (
     <main className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center p-8">
       <div className="relative w-48 h-48 mb-12 animate-fade-in">
@@ -26,53 +58,16 @@ export default function HomePage() {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 w-full max-w-5xl animate-fade-in-up">
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-800">500+</h3>
-              <p className="text-gray-600">Active Players</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <Trophy className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-800">30</h3>
-              <p className="text-gray-600">NBA Teams</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <Globe className="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-800">40+</h3>
-              <p className="text-gray-600">Countries</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <Calendar className="h-6 w-6 text-orange-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-800">27</h3>
-              <p className="text-gray-600">Seasons</p>
-            </div>
-          </div>
-        </div>
+        {stats.map((stat) => (
+          <StatCard
+            key={stat.label}
+            icon={stat.icon}
+            iconBg={stat.iconBg}
+            iconColor={stat.iconColor}
+            value={stat.value}
+            label={stat.label}
+          />
+        ))}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up">
