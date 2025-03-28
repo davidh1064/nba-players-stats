@@ -10,6 +10,8 @@ import PlayerDetailsModal from "@/components/modals/PlayerDetailsModal";
 import { FloatingInputField } from "@/components/ui/FloatingInputField";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { usePlayerData } from "@/hooks/usePlayerData";
+import { teamNameToAbbreviation } from "@/lib/constants/teamAbbreviations";
+import { TeamCombobox } from "@/components/ui/TeamCombobox";
 
 interface SearchParams {
   name?: string;
@@ -21,6 +23,7 @@ interface SearchParams {
 
 export default function PlayerSearchPage() {
   const [searchParams, setSearchParams] = useState<SearchParams>({});
+  const [hasSearched, setHasSearched] = useState(false);
   const {
     players,
     isLoading,
@@ -36,6 +39,8 @@ export default function PlayerSearchPage() {
   const handleSearch = async () => {
     try {
       setIsLoading(true);
+      setHasSearched(true);
+
       const data = await playerService.getPlayers({
         playerName: searchParams.name,
         teamName: searchParams.team,
@@ -60,6 +65,13 @@ export default function PlayerSearchPage() {
       setSearchParams((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
+  const handleClearAll = () => {
+    setSearchParams({});
+    setHasSearched(false);
+    handleSuccess([]);
+    toast.success("Search filters cleared");
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       <PageHeader
@@ -75,11 +87,14 @@ export default function PlayerSearchPage() {
           onChange={handleInputChange("name")}
         />
 
-        <FloatingInputField
-          label="Team"
-          icon={<Trophy className="h-5 w-5" />}
+        <TeamCombobox
           value={searchParams.team || ""}
-          onChange={handleInputChange("team")}
+          onChange={(teamName) =>
+            setSearchParams((prev) => ({
+              ...prev,
+              team: teamNameToAbbreviation[teamName],
+            }))
+          }
         />
 
         <FloatingInputField
@@ -103,7 +118,11 @@ export default function PlayerSearchPage() {
           onChange={handleInputChange("country")}
         />
 
-        <div className="flex items-center">
+        <p className="text-sm text-gray-500 text-center">
+          All fields are optional. Fill in as many or as few as you like.
+        </p>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <Button
             onClick={handleSearch}
             disabled={isLoading}
@@ -111,12 +130,20 @@ export default function PlayerSearchPage() {
           >
             {isLoading ? "Searching..." : "Search"}
           </Button>
+
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={handleClearAll}
+          >
+            Clear All
+          </Button>
         </div>
       </div>
 
       {isLoading ? (
         <div className="text-center text-gray-600">Searching players...</div>
-      ) : players.length > 0 ? (
+      ) : hasSearched && players.length > 0 ? (
         <div className="w-full">
           <PlayerStatsTable
             players={players}
