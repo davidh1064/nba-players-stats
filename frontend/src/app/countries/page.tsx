@@ -14,6 +14,7 @@ import PlayerDetailsModal from "@/components/modals/PlayerDetailsModal";
 import { Button } from "@/components/ui/Button";
 import { usePlayerData } from "@/hooks/usePlayerData";
 import { PageHeader } from "@/components/ui/PageHeader";
+import BackButton from "@/components/ui/BackButton";
 
 interface RestCountry {
   name: {
@@ -37,7 +38,8 @@ interface CountryWithPlayers {
 export default function CountriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCountries, setVisibleCountries] = useState(12);
-  const [selectedCountry, setSelectedCountry] = useState<CountryWithPlayers | null>(null);
+  const [selectedCountry, setSelectedCountry] =
+    useState<CountryWithPlayers | null>(null);
   const {
     players,
     selectedPlayer,
@@ -49,8 +51,11 @@ export default function CountriesPage() {
     handleError,
   } = usePlayerData();
 
-  const { countries, isLoading, error, setCountries, setLoading, setError } = useCountryStore();
-  const { observerRef } = useInfiniteScroll(() => setVisibleCountries((prev) => prev + 12));
+  const { countries, isLoading, error, setCountries, setLoading, setError } =
+    useCountryStore();
+  const { observerRef } = useInfiniteScroll(() =>
+    setVisibleCountries((prev) => prev + 12)
+  );
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -67,7 +72,7 @@ export default function CountriesPage() {
             try {
               const name = country.name.common;
               const apiName = getApiFriendlyCountryName(name);
-              const players = await playerService.getPlayers({ country: apiName });
+              const players = await playerService.getPlayersByCountry(apiName);
               return {
                 code: country.cca2,
                 name,
@@ -76,7 +81,10 @@ export default function CountriesPage() {
                 lastUpdated: Date.now(),
               };
             } catch (err) {
-              console.error(`Error fetching players for ${country.name.common}:`, err);
+              console.error(
+                `Error fetching players for ${country.name.common}:`,
+                err
+              );
               return {
                 code: country.cca2,
                 name: country.name.common,
@@ -126,12 +134,10 @@ export default function CountriesPage() {
       />
       {selectedCountry ? (
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => setSelectedCountry(null)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h2 className="text-2xl font-bold">Players from {selectedCountry.name}</h2>
-          </div>
+          <BackButton
+            onClick={() => setSelectedCountry(null)}
+            label="Back to Countries"
+          />
           {players && (
             <PlayerStatsTable
               players={players}
@@ -159,13 +165,17 @@ export default function CountriesPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center text-gray-600">Loading countries...</div>
+            <div className="text-center text-gray-600">
+              Loading countries...
+            </div>
           ) : error ? (
             <div className="text-center text-red-600">{error}</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
               {countries
-                .filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                .filter((c) =>
+                  c.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
                 .slice(0, visibleCountries)
                 .map((country) => (
                   <div
@@ -182,8 +192,12 @@ export default function CountriesPage() {
                       />
                     </div>
                     <div className="p-4 text-center">
-                      <h3 className="text-lg font-semibold text-gray-800">{country.name}</h3>
-                      <p className="text-gray-600">{country.playerCount} players</p>
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {country.name}
+                      </h3>
+                      <p className="text-gray-600">
+                        {country.playerCount} players
+                      </p>
                     </div>
                   </div>
                 ))}
