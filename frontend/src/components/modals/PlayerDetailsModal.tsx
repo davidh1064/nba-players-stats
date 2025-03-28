@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/Dialog";
 import { Player } from "@/lib/services/playerService";
 
@@ -28,6 +29,9 @@ export default function PlayerDetailsModal({
           <DialogTitle className="text-2xl font-bold">
             {player.name}
           </DialogTitle>
+          <DialogDescription>
+            Detailed stats and background information for {player.name}.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div className="space-y-2">
