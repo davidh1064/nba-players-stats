@@ -27,30 +27,7 @@ public class PlayerController {
             @RequestParam(required = false) String country,
             @RequestParam(required = false) String season
     ) {
-        if (playerName != null && teamName != null) {
-            return playerService.getPlayersByNameAndTeam(playerName, teamName);
-        }
-        else if (playerName != null && season != null) {
-            return playerService.getPlayersByNameAndSeason(playerName, season);
-        }
-        else if (playerName != null) {
-            return playerService.getPlayersByName(playerName);
-        }
-        else if (teamName != null) {
-            return playerService.getPlayersFromTeam(teamName);
-        }
-        else if (college != null) {
-            return playerService.getPlayersByCollege(college);
-        }
-        else if (country != null) {
-            return playerService.getPlayersByCountry(country);
-        }
-        else if (season != null) {
-            return playerService.getPlayersBySeason(season);
-        }
-        else {
-            return playerService.getPlayers();
-        }
+        return playerService.filterPlayers(playerName, teamName, season, college, country);
     }
 
     @GetMapping("/{id}")

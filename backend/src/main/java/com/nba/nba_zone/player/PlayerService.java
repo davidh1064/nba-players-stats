@@ -23,9 +23,10 @@ public class PlayerService {
         return playerRepository.findById(id).orElse(null);
     }
 
-    public List<Player> getPlayersFromTeam(String teamName) {
+    // 1-field combinations
+    public List<Player> getPlayersByTeam(String teamName) {
         return playerRepository.findAll().stream()
-                .filter(player -> teamName.equals(player.getTeamAbbreviation()))
+                .filter(player -> player.getTeamAbbreviation().toLowerCase().contains(teamName.toLowerCase()))
                 .collect(Collectors.toList());
     }
 
@@ -35,6 +36,26 @@ public class PlayerService {
                 .collect(Collectors.toList());
     }
 
+    public List<Player> getPlayersByCollege(String college) {
+        return playerRepository.findAll().stream()
+                .filter(player -> player.getCollege().toLowerCase().contains(college.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByCountry(String country) {
+        return playerRepository.findAll().stream()
+                .filter(player -> player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersBySeason(String season) {
+        return playerRepository.findAll().stream()
+                .filter(player -> season.equals(player.getSeason()))
+                .collect(Collectors.toList());
+    }
+
+
+    // 2-field combinations
     public List<Player> getPlayersByNameAndTeam(String playerName, String teamName) {
         return playerRepository.findAll().stream()
                 .filter(player -> teamName.equals(player.getTeamAbbreviation())
@@ -47,25 +68,226 @@ public class PlayerService {
                 .filter(player ->  player.getPlayerName().toLowerCase().contains(playerName.toLowerCase())
                     && season.equals(player.getSeason()))
                 .collect(Collectors.toList());
-
     }
 
-    public List<Player> getPlayersByCollege(String college) {
+    public List<Player> getPlayersByNameAndCountry(String playerName, String country) {
         return playerRepository.findAll().stream()
-                .filter(player -> college.equals(player.getCollege()))
+                .filter(player ->  player.getPlayerName().toLowerCase().contains(playerName.toLowerCase())
+                        && player.getCountry().toLowerCase().contains(country.toLowerCase()))
                 .collect(Collectors.toList());
     }
 
-    public List<Player> getPlayersByCountry(String country) {
+    public List<Player> getPlayersByNameAndCollege(String playerName, String college) {
         return playerRepository.findAll().stream()
-                .filter(player -> country.equals(player.getCountry()))
+                .filter(player -> player.getPlayerName().toLowerCase().contains(playerName.toLowerCase())
+                        && player.getCollege().toLowerCase().contains(college.toLowerCase()))
                 .collect(Collectors.toList());
     }
 
-    public List<Player> getPlayersBySeason(String season) {
+    public List<Player> getPlayersByTeamAndSeason(String teamName, String season) {
         return playerRepository.findAll().stream()
-                .filter(player -> season.equals(player.getSeason()))
+                .filter(player -> player.getTeamAbbreviation().toLowerCase().contains(teamName.toLowerCase())
+                        && season.equals(player.getSeason()))
                 .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByTeamAndCollege(String teamName, String college) {
+        return playerRepository.findAll().stream()
+                .filter(player -> player.getTeamAbbreviation().toLowerCase().contains(teamName.toLowerCase())
+                        && player.getCollege().toLowerCase().contains(college.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByTeamAndCountry(String teamName, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player -> player.getTeamAbbreviation().toLowerCase().contains(teamName.toLowerCase())
+                        && player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersBySeasonAndCollege(String season, String college) {
+        return playerRepository.findAll().stream()
+                .filter(player -> season.equals(player.getSeason())
+                        && player.getCollege().toLowerCase().contains(college.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersBySeasonAndCountry(String season, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player -> season.equals(player.getSeason())
+                        && player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByCollegeAndCountry(String college, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player -> player.getCollege().toLowerCase().contains(college.toLowerCase())
+                        && player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    // 3-field combinations
+    public List<Player> getPlayersByNameTeamAndSeason(String playerName, String teamName, String season) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                season.equals(player.getSeason()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByNameTeamAndCollege(String playerName, String teamName, String college) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByNameTeamAndCountry(String playerName, String teamName, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByNameSeasonAndCollege(String playerName, String season, String college) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                season.equals(player.getSeason()) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByNameSeasonAndCountry(String playerName, String season, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                season.equals(player.getSeason()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByNameCollegeAndCountry(String playerName, String college, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByTeamSeasonAndCollege(String teamName, String season, String college) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                season.equals(player.getSeason()) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByTeamSeasonAndCountry(String teamName, String season, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                season.equals(player.getSeason()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByTeamCollegeAndCountry(String teamName, String college, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersBySeasonCollegeAndCountry(String season, String college, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        season.equals(player.getSeason()) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    // 4-field combinations
+    public List<Player> getPlayersByNameTeamSeasonAndCollege(String playerName, String teamName, String season, String college) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                season.equals(player.getSeason()) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+    public List<Player> getPlayersByNameTeamSeasonAndCountry(String playerName, String teamName, String season, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                season.equals(player.getSeason()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByNameTeamCollegeAndCountry(String playerName, String teamName, String college, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByNameSeasonCollegeAndCountry(String playerName, String season, String college, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                season.equals(player.getSeason()) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> getPlayersByTeamSeasonCollegeAndCountry(String teamName, String season, String college, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                season.equals(player.getSeason()) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    // 5-field combination
+    public List<Player> getPlayersByAllFields(String playerName, String teamName, String season, String college, String country) {
+        return playerRepository.findAll().stream()
+                .filter(player ->
+                        player.getPlayerName().toLowerCase().contains(playerName.toLowerCase()) &&
+                                player.getTeamAbbreviation().equalsIgnoreCase(teamName) &&
+                                season.equals(player.getSeason()) &&
+                                player.getCollege().toLowerCase().contains(college.toLowerCase()) &&
+                                player.getCountry().toLowerCase().contains(country.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Player> filterPlayers(String playerName, String teamName, String season, String college, String country) {
+        Specification<Player> spec = Specification
+                .where(PlayerSpecifications.hasPlayerName(playerName))
+                .and(PlayerSpecifications.hasTeamName(teamName))
+                .and(PlayerSpecifications.hasSeason(season))
+                .and(PlayerSpecifications.hasCollege(college))
+                .and(PlayerSpecifications.hasCountry(country));
+
+        return playerRepository.findAll(spec);
     }
 
     public Player addPlayer(Player player) {
