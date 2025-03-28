@@ -32,7 +32,7 @@ export default function SeasonsPage() {
     }
     try {
       setIsLoading(true);
-      const data = await playerService.getPlayers({ season });
+      const data = await playerService.getPlayersBySeason(season);
       handleSuccess(data);
       if (data.length === 0) {
         toast.info("No players found for this season");

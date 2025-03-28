@@ -43,6 +43,7 @@ export default function HomePage() {
           src="/nba-logo.png"
           alt="NBA Logo"
           fill
+          sizes="(max-width: 768px) 120px, 192px"
           className="object-contain drop-shadow-2xl"
           priority
         />
