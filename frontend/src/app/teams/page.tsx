@@ -85,7 +85,7 @@ export default function TeamsPage() {
               <div
                 key={team.id}
                 className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border cursor-pointer overflow-hidden"
-                onClick={() => handleTeamClick(team.name)}
+                onClick={() => handleTeamClick(`${team.city} ${team.name}`)}
               >
                 <div className="relative h-48 w-full">
                   <Image
