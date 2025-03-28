@@ -1,18 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/Input";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import Image from "next/image";
 import { Search, ArrowLeft } from "lucide-react";
-import { playerService } from "@/lib/services/playerService";
+import { Player, playerService } from "@/lib/services/playerService";
 import { toast } from "sonner";
 import { useCountryStore } from "@/lib/stores/useCountryStore";
 import { getApiFriendlyCountryName } from "@/lib/utils/countryUtils";
 import PlayerStatsTable from "@/components/tables/PlayerStatsTable";
 import PlayerDetailsModal from "@/components/modals/PlayerDetailsModal";
-import { Player } from "@/lib/services/playerService";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
+import { usePlayerData } from "@/hooks/usePlayerData";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 interface RestCountry {
   name: {
@@ -30,79 +31,52 @@ interface CountryWithPlayers {
   flag: string;
   playerCount: number;
   lastUpdated: number;
-  players?: {
-    id: number;
-    name: string;
-    team: string;
-    season: string;
-    college?: string;
-    country: string;
-    age?: number;
-    playerHeight?: number;
-    playerWeight?: number;
-    draftYear?: string;
-    draftRound?: string;
-    draftNumber?: string;
-    gp?: number;
-    pts?: number;
-    reb?: number;
-    ast?: number;
-    netRating?: number;
-    orebPct?: number;
-    drebPct?: number;
-    usgPct?: number;
-    tsPct?: number;
-    astPct?: number;
-  }[];
+  players?: Player[];
 }
 
 export default function CountriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCountries, setVisibleCountries] = useState(12);
-  const [selectedCountry, setSelectedCountry] =
-    useState<CountryWithPlayers | null>(null);
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { countries, isLoading, error, setCountries, setLoading, setError } =
-    useCountryStore();
+  const [selectedCountry, setSelectedCountry] = useState<CountryWithPlayers | null>(null);
+  const {
+    players,
+    selectedPlayer,
+    isModalOpen,
+    setIsLoading,
+    handlePlayerClick,
+    handleModalClose,
+    handleSuccess,
+    handleError,
+  } = usePlayerData();
+
+  const { countries, isLoading, error, setCountries, setLoading, setError } = useCountryStore();
+  const { observerRef } = useInfiniteScroll(() => setVisibleCountries((prev) => prev + 12));
 
   useEffect(() => {
     const fetchCountries = async () => {
-      // If we have cached data and it's not expired, don't fetch again
-      if (countries.length > 0) {
-        return;
-      }
-
+      if (countries.length > 0) return;
       try {
         setLoading(true);
         setError(null);
 
-        // Fetch all countries from REST Countries API
-        const response = await fetch("https://restcountries.com/v3.1/all");
-        const countryData: RestCountry[] = await response.json();
+        const res = await fetch("https://restcountries.com/v3.1/all");
+        const countryData: RestCountry[] = await res.json();
 
-        // Fetch player counts for each country in parallel
         const countriesWithPlayerCounts = await Promise.all(
-          countryData.map(async (country: RestCountry) => {
+          countryData.map(async (country) => {
             try {
-              const apiFriendlyName = getApiFriendlyCountryName(
-                country.name.common
-              );
-              const players = await playerService.getPlayers({
-                country: apiFriendlyName,
-              });
+              const name = country.name.common;
+              const apiName = getApiFriendlyCountryName(name);
+              const players = await playerService.getPlayers({ country: apiName });
               return {
                 code: country.cca2,
-                name: country.name.common,
+                name,
                 flag: country.flags.svg,
                 playerCount: players.length,
                 lastUpdated: Date.now(),
               };
-            } catch (error) {
-              console.error(
-                `Error fetching players for ${country.name.common}:`,
-                error
-              );
+            } catch (err) {
+              console.error(`Error fetching players for ${country.name.common}:`, err);
               return {
                 code: country.cca2,
                 name: country.name.common,
@@ -114,18 +88,13 @@ export default function CountriesPage() {
           })
         );
 
-        // Filter out countries with no players and sort by player count
         const countriesWithPlayers = countriesWithPlayerCounts
-          .filter((country: CountryWithPlayers) => country.playerCount > 0)
-          .sort(
-            (a: CountryWithPlayers, b: CountryWithPlayers) =>
-              b.playerCount - a.playerCount
-          );
+          .filter((c) => c.playerCount > 0)
+          .sort((a, b) => b.playerCount - a.playerCount);
 
         setCountries(countriesWithPlayers);
-      } catch (error) {
-        console.error("Error fetching countries:", error);
-        setError("Failed to fetch countries. Please try again.");
+      } catch (err) {
+        setError("Failed to fetch countries");
         toast.error("Failed to fetch countries. Please try again.");
       } finally {
         setLoading(false);
@@ -135,74 +104,37 @@ export default function CountriesPage() {
     fetchCountries();
   }, [countries.length, setCountries, setLoading, setError]);
 
-  const loadMore = () => {
-    setVisibleCountries((prev) => prev + 12);
-  };
-
-  const { observerRef } = useInfiniteScroll(loadMore);
-
-  const filteredCountries = countries.filter((country: CountryWithPlayers) =>
-    country.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const handleCountryClick = async (country: CountryWithPlayers) => {
     try {
       setLoading(true);
-      const apiFriendlyName = getApiFriendlyCountryName(country.name);
-      const players = await playerService.getPlayers({
-        country: apiFriendlyName,
-      });
-      console.log("Fetched players:", players);
-      setSelectedCountry({
-        ...country,
-        players,
-      });
+      const name = getApiFriendlyCountryName(country.name);
+      const players = await playerService.getPlayers({ country: name });
+      setSelectedCountry({ ...country, players });
+      handleSuccess(players);
     } catch (error) {
-      console.error("Error fetching players for country:", error);
-      toast.error("Failed to fetch players for this country");
+      handleError(error, "Failed to fetch players for this country");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBackClick = () => {
-    setSelectedCountry(null);
-  };
-
-  const handlePlayerClick = (player: Player) => {
-    setSelectedPlayer(player);
-    setIsModalOpen(true);
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-gray-800">
-          NBA Players by Country
-        </h1>
-        <p className="text-lg text-gray-600">
-          Discover NBA players from around the world
-        </p>
-      </div>
-
+      <PageHeader
+        title="NBA Players by Country"
+        description="Discover NBA players from around the world"
+      />
       {selectedCountry ? (
         <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleBackClick}
-              className="hover:bg-gray-100"
-            >
+            <Button variant="ghost" size="icon" onClick={() => setSelectedCountry(null)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h2 className="text-2xl font-bold">
-              Players from {selectedCountry.name}
-            </h2>
+            <h2 className="text-2xl font-bold">Players from {selectedCountry.name}</h2>
           </div>
-          {selectedCountry.players && (
+          {players && (
             <PlayerStatsTable
-              players={selectedCountry.players}
+              players={players}
               title={`${selectedCountry.name} Players Stats`}
               onPlayerClick={handlePlayerClick}
             />
@@ -227,37 +159,34 @@ export default function CountriesPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center text-gray-600">
-              Loading countries...
-            </div>
+            <div className="text-center text-gray-600">Loading countries...</div>
           ) : error ? (
             <div className="text-center text-red-600">{error}</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {filteredCountries.map((country: CountryWithPlayers) => (
-                <div
-                  key={country.code}
-                  className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border cursor-pointer overflow-hidden"
-                  onClick={() => handleCountryClick(country)}
-                >
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={country.flag}
-                      alt={`${country.name} flag`}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+              {countries
+                .filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                .slice(0, visibleCountries)
+                .map((country) => (
+                  <div
+                    key={country.code}
+                    className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border cursor-pointer overflow-hidden"
+                    onClick={() => handleCountryClick(country)}
+                  >
+                    <div className="relative h-48 w-full">
+                      <Image
+                        src={country.flag}
+                        alt={`${country.name} flag`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-4 text-center">
+                      <h3 className="text-lg font-semibold text-gray-800">{country.name}</h3>
+                      <p className="text-gray-600">{country.playerCount} players</p>
+                    </div>
                   </div>
-                  <div className="p-4 text-center">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {country.name}
-                    </h3>
-                    <p className="text-gray-600">
-                      {country.playerCount} players
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </>
@@ -268,10 +197,7 @@ export default function CountriesPage() {
       <PlayerDetailsModal
         player={selectedPlayer}
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedPlayer(null);
-        }}
+        onClose={handleModalClose}
       />
     </div>
   );

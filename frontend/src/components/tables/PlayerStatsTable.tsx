@@ -9,7 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/Table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 
 interface PlayerStatsTableProps {
@@ -41,8 +41,8 @@ export default function PlayerStatsTable({
 
   const sortedPlayers = useMemo(() => {
     return [...players].sort((a, b) => {
-      const aValue = sortKey === "name" ? a.name : (a[sortKey] ?? 0);
-      const bValue = sortKey === "name" ? b.name : (b[sortKey] ?? 0);
+      const aValue = sortKey === "name" ? a.name : a[sortKey] ?? 0;
+      const bValue = sortKey === "name" ? b.name : b[sortKey] ?? 0;
 
       if (sortKey === "name") {
         return ascending
@@ -116,7 +116,9 @@ export default function PlayerStatsTable({
                   <TableCell key={stat.key} className="text-right">
                     {stat.key.includes("Pct")
                       ? player[stat.key as keyof Player] != null
-                        ? `${((player[stat.key as keyof Player] as number) * 100).toFixed(1)}%`
+                        ? `${(
+                            (player[stat.key as keyof Player] as number) * 100
+                          ).toFixed(1)}%`
                         : "N/A"
                       : player[stat.key as keyof Player] ?? "N/A"}
                   </TableCell>

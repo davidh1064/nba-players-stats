@@ -1,67 +1,63 @@
 "use client";
 
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { playerService } from "@/lib/services/playerService";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { FloatingInputField } from "@/components/ui/FloatingInputField";
 import PlayerStatsTable from "@/components/tables/PlayerStatsTable";
 import PlayerDetailsModal from "@/components/modals/PlayerDetailsModal";
-import { Player } from "@/lib/services/playerService";
-import { cn } from "@/lib/utils";
-import { FloatingInputField } from "@/components/ui/FloatingInputField";
+import { playerService } from "@/lib/services/playerService";
+import { usePlayerData } from "@/hooks/usePlayerData";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default function SeasonsPage() {
   const [season, setSeason] = useState("");
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const {
+    players,
+    isLoading,
+    selectedPlayer,
+    isModalOpen,
+    setIsLoading,
+    handlePlayerClick,
+    handleModalClose,
+    handleError,
+    handleSuccess,
+  } = usePlayerData();
 
   const handleSearch = async () => {
     if (!season) {
       toast.error("Please enter a season");
       return;
     }
-
     try {
       setIsLoading(true);
-      const results = await playerService.getPlayers({ season });
-      setPlayers(results);
-      if (results.length === 0) {
+      const data = await playerService.getPlayers({ season });
+      handleSuccess(data);
+      if (data.length === 0) {
         toast.info("No players found for this season");
       }
     } catch (error) {
-      console.error("Error fetching players:", error);
-      toast.error("Failed to fetch players");
+      handleError(error, "Failed to fetch players");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handlePlayerClick = (player: Player) => {
-    setSelectedPlayer(player);
-    setIsModalOpen(true);
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-gray-800">Search by Season</h1>
-        <p className="text-lg text-gray-600">
-          Find all NBA players from a specific season
-        </p>
-      </div>
+      <PageHeader
+        title="Search by Season"
+        description="Find all NBA players from a specific season"
+      />
 
       <div className="max-w-md mx-auto">
-        <div className="relative">
-          <FloatingInputField
-            label="Season (e.g., 2022-23)"
-            type="text"
-            value={season}
-            onChange={(e) => setSeason(e.target.value)}
-          />
-        </div>
+        <FloatingInputField
+          label="Season (e.g., 2022-23)"
+          type="text"
+          value={season}
+          onChange={(e) => setSeason(e.target.value)}
+        />
 
         <Button
           onClick={handleSearch}
@@ -85,10 +81,7 @@ export default function SeasonsPage() {
       <PlayerDetailsModal
         player={selectedPlayer}
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedPlayer(null);
-        }}
+        onClose={handleModalClose}
       />
     </div>
   );

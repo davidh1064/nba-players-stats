@@ -8,77 +8,66 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+} from "@/components/ui/NavigationMenu";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 
 export function Navigation() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const navLinks = [
+    { href: "/", label: "Home" },
+    { href: "/teams", label: "Teams" },
+    { href: "/countries", label: "Countries" },
+    { href: "/seasons", label: "Seasons" },
+    { href: "/players/search", label: "Player Search" },
+  ];
+  
   return (
     <div className="border-b">
       <div className="container mx-auto px-4">
-        <NavigationMenu className="py-4">
+        {/* Top bar with menu button for mobile */}
+        <div className="flex items-center justify-between py-4 md:hidden">
+          <h1 className="text-xl font-bold">NBA Zone</h1>
+          <button onClick={() => setIsOpen(!isOpen)} className="text-gray-700">
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+
+        {/* Desktop Nav */}
+        <NavigationMenu className="hidden md:flex py-4">
           <NavigationMenuList className="gap-6">
-            <NavigationMenuItem>
-              <Link href="/" legacyBehavior passHref>
+            {navLinks.map((link) => (
+              <Link key={link.href} href={link.href} passHref legacyBehavior>
                 <NavigationMenuLink
                   className={cn(
                     "group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50",
                     "text-lg font-semibold"
                   )}
                 >
-                  Home
+                  {link.label}
                 </NavigationMenuLink>
               </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href="/teams" legacyBehavior passHref>
-                <NavigationMenuLink
-                  className={cn(
-                    "group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50",
-                    "text-lg font-semibold"
-                  )}
-                >
-                  Teams
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href="/countries" legacyBehavior passHref>
-                <NavigationMenuLink
-                  className={cn(
-                    "group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50",
-                    "text-lg font-semibold"
-                  )}
-                >
-                  Countries
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href="/seasons" legacyBehavior passHref>
-                <NavigationMenuLink
-                  className={cn(
-                    "group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50",
-                    "text-lg font-semibold"
-                  )}
-                >
-                  Seasons
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href="/players/search" legacyBehavior passHref>
-                <NavigationMenuLink
-                  className={cn(
-                    "group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50",
-                    "text-lg font-semibold"
-                  )}
-                >
-                  Player Search
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
+            ))}
           </NavigationMenuList>
         </NavigationMenu>
+
+        {/* Mobile Nav (toggle visible on click) */}
+        {isOpen && (
+          <div className="flex flex-col space-y-2 pb-4 md:hidden">
+            {navLinks.map((link) => (
+              <Link key={link.href} href={link.href} passHref legacyBehavior>
+                <a
+                  className="block px-4 py-2 rounded-md text-lg font-medium text-gray-800 hover:bg-gray-100"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.label}
+                </a>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
