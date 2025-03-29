@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Search, Users, Trophy, GraduationCap, Globe } from "lucide-react";
 import { playerService } from "@/lib/services/playerService";
@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { usePlayerData } from "@/hooks/usePlayerData";
 import { teamNameToAbbreviation } from "@/lib/constants/teamAbbreviations";
 import { TeamCombobox } from "@/components/ui/TeamCombobox";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface SearchParams {
   name?: string;
@@ -22,6 +23,8 @@ interface SearchParams {
 }
 
 export default function PlayerSearchPage() {
+  const router = useRouter();
+  const urlParams = useSearchParams();
   const [searchParams, setSearchParams] = useState<SearchParams>({});
   const [hasSearched, setHasSearched] = useState(false);
   const {
@@ -36,18 +39,32 @@ export default function PlayerSearchPage() {
     handleSuccess,
   } = usePlayerData();
 
+  const buildQueryString = (params: Record<string, string | undefined>) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) query.append(key, value);
+    });
+    return query.toString();
+  };
+
   const handleSearch = async () => {
+    const queryParams = {
+      playerName: searchParams.name,
+      teamName: searchParams.team,
+      season: searchParams.season,
+      college: searchParams.college,
+      country: searchParams.country,
+    };
+
+    const queryString = buildQueryString(queryParams);
+    const newUrl = `/players/search?${queryString}`;
+    router.push(newUrl);
+
     try {
       setIsLoading(true);
       setHasSearched(true);
 
-      const data = await playerService.getPlayers({
-        playerName: searchParams.name,
-        teamName: searchParams.team,
-        season: searchParams.season,
-        college: searchParams.college,
-        country: searchParams.country,
-      });
+      const data = await playerService.getPlayers(queryParams);
 
       if (data.length === 0) {
         toast.info("No players found matching your search criteria");
@@ -70,7 +87,29 @@ export default function PlayerSearchPage() {
     setHasSearched(false);
     handleSuccess([]);
     toast.success("Search filters cleared");
+    router.replace("/players/search");
   };
+
+  useEffect(() => {
+    const playerName = urlParams.get("playerName") || "";
+    const teamName = urlParams.get("teamName") || "";
+    const season = urlParams.get("season") || "";
+    const college = urlParams.get("college") || "";
+    const country = urlParams.get("country") || "";
+
+    if (playerName || teamName || season || college || country) {
+      setSearchParams({
+        name: playerName,
+        team: teamName,
+        season,
+        college,
+        country,
+      });
+
+      handleSuccess([]);
+      setTimeout(() => handleSearch(), 0);
+    }
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">

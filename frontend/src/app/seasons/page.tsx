@@ -10,8 +10,10 @@ import { playerService } from "@/lib/services/playerService";
 import { usePlayerData } from "@/hooks/usePlayerData";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useRouter } from "next/navigation";
 
 export default function SeasonsPage() {
+  const router = useRouter();
   const [season, setSeason] = useState("");
   const {
     players,
@@ -30,6 +32,11 @@ export default function SeasonsPage() {
       toast.error("Please enter a season");
       return;
     }
+
+    const queryParams = new URLSearchParams({season});
+    const newUrl = `/seasons?=${queryParams}`;
+    router.push(newUrl);
+
     try {
       setIsLoading(true);
       const data = await playerService.getPlayersBySeason(season);

@@ -11,10 +11,10 @@ import { useCountryStore } from "@/lib/stores/useCountryStore";
 import { getApiFriendlyCountryName } from "@/lib/utils/countryUtils";
 import PlayerStatsTable from "@/components/tables/PlayerStatsTable";
 import PlayerDetailsModal from "@/components/modals/PlayerDetailsModal";
-import { Button } from "@/components/ui/Button";
 import { usePlayerData } from "@/hooks/usePlayerData";
 import { PageHeader } from "@/components/ui/PageHeader";
 import BackButton from "@/components/ui/BackButton";
+import { useRouter } from "next/navigation";
 
 interface RestCountry {
   name: {
@@ -36,6 +36,7 @@ interface CountryWithPlayers {
 }
 
 export default function CountriesPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCountries, setVisibleCountries] = useState(12);
   const [selectedCountry, setSelectedCountry] =
@@ -115,8 +116,13 @@ export default function CountriesPage() {
   const handleCountryClick = async (country: CountryWithPlayers) => {
     try {
       setLoading(true);
-      const name = getApiFriendlyCountryName(country.name);
-      const players = await playerService.getPlayers({ country: name });
+      const countryName = getApiFriendlyCountryName(country.name);
+
+      const queryParams = new URLSearchParams({ country: countryName });
+      const newUrl = `/countries?${queryParams.toString()}`;
+      router.push(newUrl);
+
+      const players = await playerService.getPlayers({ country: countryName });
       setSelectedCountry({ ...country, players });
       handleSuccess(players);
     } catch (error) {
@@ -135,7 +141,10 @@ export default function CountriesPage() {
       {selectedCountry ? (
         <div className="space-y-4">
           <BackButton
-            onClick={() => setSelectedCountry(null)}
+            onClick={() => {
+              setSelectedCountry(null);
+              router.replace("/countries");
+            }}
             label="Back to Countries"
           />
           {players && (

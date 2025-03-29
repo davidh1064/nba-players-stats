@@ -13,8 +13,12 @@ import PlayerDetailsModal from "@/components/modals/PlayerDetailsModal";
 import { teamNameToAbbreviation } from "@/lib/constants/teamAbbreviations";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { useRouter, useSearchParams } from "next/navigation";
+import BackButton from "@/components/ui/BackButton";
 
 export default function TeamsPage() {
+  const router = useRouter();
+  const urlParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
 
@@ -42,6 +46,11 @@ export default function TeamsPage() {
 
       setIsLoading(true);
       setSelectedTeam(teamName);
+
+      const queryParams = new URLSearchParams({ teamAbbreviation });
+      const newUrl = `/teams?${queryParams.toString()}`;
+      router.push(newUrl);
+
       const results = await playerService.getPlayersByTeam(teamAbbreviation);
 
       if (results.length === 0) {
@@ -109,13 +118,13 @@ export default function TeamsPage() {
 
       {selectedTeam && (
         <div className="space-y-6">
-          <Button
-            variant="outline"
-            onClick={() => setSelectedTeam(null)}
-            className="text-sm sm:text-base w-max hover:bg-gray-100 transition duration-200"
-          >
-            ← Back to Teams
-          </Button>
+          <BackButton
+            onClick={() => {
+              setSelectedTeam(null);
+              router.replace("/teams");
+            }}
+            label="Back to Teams"
+          />
           <PlayerStatsTable
             players={players}
             title={`${selectedTeam} Player Stats`}
