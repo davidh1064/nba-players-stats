@@ -5,10 +5,10 @@ This is a web application that provides users with an intuitive interface to exp
 
 This backend is implemented using **Java Spring Boot** and utilizes a RESTful architecture to serve NBA player statistics. 
 The key components include:
-- Spring Boot REST API: Provides endpoints to retrieve, add, update, and delete player information.
-- Spring JPA & Hibernate: Used for database interactions with **PostgreSQL**, ensuring smooth data persistence and retrieval.
- - Spring Data JPA Repository: Simplifies data access through the PlayerRepository interface.
-- Entity Mapping: Utilizes JPA Entity (Player.java) mapping to the player_stats database table. 
+- **Spring Boot REST API**: Provides endpoints to retrieve, add, update, and delete player information.
+- **Spring JPA & Hibernate**: Used for database interactions with **PostgreSQL**, ensuring smooth data persistence and retrieval.
+- **Spring Data JPA Repository**: Simplifies data access through the PlayerRepository interface.
+- **Entity Mapping**: Utilizes JPA Entity (Player.java) mapping to the player_stats database table. 
 
 # Features
 
