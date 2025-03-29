@@ -25,13 +25,13 @@ The key components include:
 The frontend of the application is built with **Next.js 14 (App Router)** and styled using **Tailwind CSS** and **ShadCN UI** for a modern, responsive, and accessible user experience. It provides a seamless interface for users to explore, filter, and analyze NBA player data.
 
 ## Tech Stack
-- **Next.js 14** – App Router-based architecture for routing and layout composition
-- **TypeScript** – Strongly typed React components
-- **Tailwind CSS** – Utility-first styling
-- **ShadCN UI** – Modern component library with full accessibility support
-- **Framer Motion** – Smooth page animations
-- **Sonner** – Toast notification system
-- **Axios** – For HTTP requests to the backend
+- **Next.js 14** 
+- **TypeScript** 
+- **Tailwind CSS** 
+- **ShadCN UI**
+- **Framer Motion** 
+- **Sonner** 
+- **Axios**
 
 ## Pages & Features
 
