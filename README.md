@@ -4,16 +4,26 @@ This is a web application that provides users with an intuitive interface to exp
 # Backend Implementation Overview
 
 This backend is implemented using **Java Spring Boot** and utilizes a RESTful architecture to serve NBA player statistics. 
-The key components include:
-- **Spring Boot REST API**: Provides endpoints to retrieve, add, update, and delete player information.
-- **Spring JPA & Hibernate**: Used for database interactions with **PostgreSQL**, ensuring smooth data persistence and retrieval.
-- **Spring Data JPA Repository**: Simplifies data access through the PlayerRepository interface.
-- **Entity Mapping**: Utilizes JPA Entity (Player.java) mapping to the player_stats database table. 
+
+## Tech Stack
+- **Spring Boot (Java)**– REST API framework for serving player data.
+- **Spring Data JPA + Hibernate** – Handles ORM and interacts with a PostgreSQL database.
+- **PostgreSQL** – Primary relational database used to store player statistics.
+- **JPA Repositories** – Enable clean and abstracted data access via `PlayerRepository`.
 
 # Features
 
-- Flexible Data Queries: Supports filtering player data by attributes such as player name, team abbreviation, college, country, and season.
-- CRUD Operations: Implements REST endpoints for creating, reading, updating, and deleting player records.
+- **Dynamic Query Handling**
+Refactored controller logic to support all 31 possible combinations of up to 5 search filters (`playerName`, `teamName`, `college`, `country`, `season`) using a single service method.
+
+- **Custom JPQL Queries for Performance**
+Migrated filtering logic from in-memory stream operations to a custom `PlayerRepository` using JPQL dynamic query generation for more efficient and scalable searches across large datasets.
+
+- **Entity Mapping & Schema Design**
+The `Player` entity maps directly to the `player_stats` table, with clear mappings for fields like player name, team abbreviation, physical attributes, college, draft stats, and advanced metrics.
+
+- **CRUD Operations**
+Provides endpoints for Create, Read, Update, and Delete actions on player records.
 
 # Example
 
