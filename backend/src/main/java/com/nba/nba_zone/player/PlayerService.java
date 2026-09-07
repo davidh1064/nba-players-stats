@@ -2,7 +2,10 @@ package com.nba.nba_zone.player;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -295,9 +298,11 @@ public class PlayerService {
         return playerRepository.save(player);
     }
 
+    @Transactional
     public Player updatePlayer(Long id, Player playerDetails) {
         Player existingPlayer = playerRepository.findPlayerById(id)
-                .orElseThrow(() -> new RuntimeException("Player not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Player " + id + " not found"));
         existingPlayer.setPlayerName(playerDetails.getPlayerName());
         existingPlayer.setTeamAbbreviation(playerDetails.getTeamAbbreviation());
         existingPlayer.setAge(playerDetails.getAge());
@@ -323,7 +328,11 @@ public class PlayerService {
         return playerRepository.save(existingPlayer);
     }
 
+    @Transactional
     public void deletePlayer(Long id) {
+        if (!playerRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player " + id + " not found");
+        }
         playerRepository.deletePlayerById(id);
     }
 }
