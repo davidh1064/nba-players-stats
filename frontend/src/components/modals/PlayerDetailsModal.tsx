@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/Dialog";
+} from "@/components/ui/dialog";
 import { Player } from "@/lib/services/playerService";
 
 interface PlayerDetailsModalProps {

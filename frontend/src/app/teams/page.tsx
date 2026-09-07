@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { teams } from "@/data/teams";
@@ -12,11 +12,11 @@ import PlayerStatsTable from "@/components/tables/PlayerStatsTable";
 import PlayerDetailsModal from "@/components/modals/PlayerDetailsModal";
 import { teamNameToAbbreviation } from "@/lib/constants/teamAbbreviations";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import BackButton from "@/components/ui/BackButton";
 
-export default function TeamsPage() {
+function TeamsPageContent() {
   const router = useRouter();
   const urlParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
@@ -139,5 +139,13 @@ export default function TeamsPage() {
         onClose={handleModalClose}
       />
     </div>
+  );
+}
+
+export default function TeamsPage() {
+  return (
+    <Suspense fallback={null}>
+      <TeamsPageContent />
+    </Suspense>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { FloatingInputField } from "@/components/ui/FloatingInputField";
 import PlayerStatsTable from "@/components/tables/PlayerStatsTable";
 import PlayerDetailsModal from "@/components/modals/PlayerDetailsModal";

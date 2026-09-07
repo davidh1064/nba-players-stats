@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import Image from "next/image";
 import { Search, ArrowLeft } from "lucide-react";
