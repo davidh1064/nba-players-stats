@@ -90,3 +90,64 @@ The frontend of the application is built with **Next.js 14 (App Router)** and st
 - `TeamCombobox` – Combobox with search and clear functionality for selecting NBA teams
 
 
+
+## Running locally
+
+### Backend
+
+Copy `backend/.env.example` to `backend/.env` and fill it in:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` are **required** — the application refuses
+to start without them, rather than falling back to a default credential. Generate
+a password with:
+
+```bash
+openssl rand -base64 24
+```
+
+Then:
+
+```bash
+cd backend && ./mvnw spring-boot:run
+```
+
+### Frontend
+
+```bash
+cd frontend && npm ci && npm run dev
+```
+
+If the backend is not on `http://localhost:8080`, set `NEXT_PUBLIC_API_BASE_URL`
+in `frontend/.env.local` (see `frontend/.env.example`).
+
+## API access control
+
+Reads are public. Writes require the admin credentials over HTTP Basic.
+
+| Endpoint | Auth |
+|---|---|
+| `GET /api/players` | public |
+| `GET /api/players/{id}` | public |
+| `POST /api/players` | admin |
+| `PUT /api/players` | admin |
+| `DELETE /api/players/{id}` | admin |
+
+```bash
+# Rejected with 401
+curl -X DELETE http://localhost:8080/api/players/1
+
+# Accepted
+curl -u "$ADMIN_USERNAME:$ADMIN_PASSWORD" -X DELETE http://localhost:8080/api/players/1
+```
+
+Allowed browser origins are set with `ALLOWED_ORIGINS` (comma-separated).
+Note that CORS restricts browsers only — it is not an access control, which is
+why the write endpoints are authenticated rather than relying on it.
+
+`POST` requires a client-supplied `id`: the `Player` entity uses an assigned
+identifier rather than a generated one, because the table is populated from a
+dataset with pre-existing ids.

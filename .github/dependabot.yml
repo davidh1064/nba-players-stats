@@ -1,0 +1,81 @@
+# Keeps dependencies moving continuously so security advisories are fixed by
+# routine updates before they ever become an alert email.
+#
+# Updates are grouped: one pull request per ecosystem per week for all
+# minor/patch bumps, instead of one PR per package. The 21 advisories this repo
+# accumulated arrived as ~127 separate alerts precisely because nothing was
+# moving between them.
+version: 2
+
+updates:
+  # ---------- Frontend (Next.js / npm) ----------
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+    groups:
+      # Everything routine lands in a single PR that CI can verify at once.
+      npm-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      # Majors are grouped separately and never auto-merged: they are where
+      # breaking changes live (Next 14 -> 15 was one of these).
+      npm-major:
+        patterns:
+          - "*"
+        update-types:
+          - major
+
+  # ---------- Backend (Spring Boot / Maven) ----------
+  # Worth having even though GitHub's dependency graph cannot match advisories
+  # against BOM-managed transitive versions: Dependabot can still bump the
+  # spring-boot-starter-parent version declared in pom.xml, which is what pulls
+  # patched Tomcat, Spring, Hibernate and Jackson forward.
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+    groups:
+      maven-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      maven-major:
+        patterns:
+          - "*"
+        update-types:
+          - major
+
+  # ---------- GitHub Actions ----------
+  # Action versions are a supply-chain surface of their own and are easy to
+  # forget, since nothing in the app build fails when they go stale.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+      - ci
+    groups:
+      actions:
+        patterns:
+          - "*"

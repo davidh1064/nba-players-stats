@@ -58,6 +58,11 @@ export const playerService = {
     return response.data;
   },
 
+  // NOTE: the three write helpers below now require admin credentials. The API
+  // rejects unauthenticated POST/PUT/DELETE with a 401. Nothing in the UI calls
+  // them today; wiring them up means adding a sign-in flow first, so do not send
+  // the admin password from the browser.
+  //
   // Create new player
   createPlayer: async (player: Omit<Player, "id">) => {
     const response = await api.post<Player>("/players", player);
