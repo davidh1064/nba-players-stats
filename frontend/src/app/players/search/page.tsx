@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { Suspense, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Search, Users, Trophy, GraduationCap, Globe } from "lucide-react";
 import { playerService } from "@/lib/services/playerService";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ interface SearchParams {
   country?: string;
 }
 
-export default function PlayerSearchPage() {
+function PlayerSearchPageContent() {
   const router = useRouter();
   const urlParams = useSearchParams();
   const [searchParams, setSearchParams] = useState<SearchParams>({});
@@ -198,5 +198,13 @@ export default function PlayerSearchPage() {
         onClose={handleModalClose}
       />
     </div>
+  );
+}
+
+export default function PlayerSearchPage() {
+  return (
+    <Suspense fallback={null}>
+      <PlayerSearchPageContent />
+    </Suspense>
   );
 }
