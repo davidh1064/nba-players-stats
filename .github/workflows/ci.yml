@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Catches newly published advisories against unchanged code, so a problem
+  # surfaces on a schedule rather than waiting for the next commit.
+  schedule:
+    - cron: "0 13 * * 1"
+
+# Least privilege by default; individual jobs widen this where needed.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Type check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Test
+        working-directory: backend
+        # Runs against in-memory H2 via the "test" profile, so no database
+        # service container is needed.
+        run: ./mvnw -B verify
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    # Reports known advisories. Deliberately NOT a gate on auto-merge: a newly
+    # published advisory would otherwise block the very Dependabot pull request
+    # that fixes it.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+  dependabot-auto-merge:
+    name: Auto-merge Dependabot updates
+    runs-on: ubuntu-latest
+    # Only after the real gates pass.
+    needs: [frontend, backend]
+    if: github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Fetch update metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge patch and minor updates
+        # Majors are left for a human: that is where breaking changes live.
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        run: gh pr merge --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Note major updates for review
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: gh pr comment "$PR_URL" --body "Major version update — not auto-merged. Review the changelog before merging."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
