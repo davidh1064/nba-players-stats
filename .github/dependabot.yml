@@ -1,10 +1,21 @@
 # Keeps dependencies moving continuously so security advisories are fixed by
 # routine updates before they ever become an alert email.
 #
-# Updates are grouped: one pull request per ecosystem per week for all
-# minor/patch bumps, instead of one PR per package. The 21 advisories this repo
-# accumulated arrived as ~127 separate alerts precisely because nothing was
-# moving between them.
+# Tuned for minimal noise:
+#   - MONTHLY, not weekly.
+#   - Minor and patch updates are GROUPED into a single pull request per
+#     ecosystem, and auto-merge once CI passes (see ci.yml), so a normal month
+#     produces nothing to look at.
+#   - Major updates are IGNORED entirely. They are where breaking changes live,
+#     so they always needed a human, and a queue of pull requests waiting for
+#     one is the noise this configuration is meant to avoid.
+#
+# The cost of ignoring majors, stated plainly: some advisories are only ever
+# fixed in a new major. Next.js was exactly this — several advisories against
+# 14.x had no 14.x fix at all and were patched only in 15.5.x. When that
+# happens you will get an alert email with no pull request attached, and the
+# upgrade has to be done by hand. Run `npm outdated` / `./mvnw versions:display-dependency-updates`
+# occasionally, or drop the `ignore` blocks below for a while, to catch up.
 version: 2
 
 updates:
@@ -12,29 +23,25 @@ updates:
   - package-ecosystem: npm
     directory: /frontend
     schedule:
-      interval: weekly
+      interval: monthly
       day: monday
       time: "06:00"
       timezone: America/Los_Angeles
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - dependencies
       - frontend
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
-      # Everything routine lands in a single PR that CI can verify at once.
       npm-minor-and-patch:
         patterns:
           - "*"
         update-types:
           - minor
           - patch
-      # Majors are grouped separately and never auto-merged: they are where
-      # breaking changes live (Next 14 -> 15 was one of these).
-      npm-major:
-        patterns:
-          - "*"
-        update-types:
-          - major
 
   # ---------- Backend (Spring Boot / Maven) ----------
   # Worth having even though GitHub's dependency graph cannot match advisories
@@ -44,14 +51,18 @@ updates:
   - package-ecosystem: maven
     directory: /backend
     schedule:
-      interval: weekly
+      interval: monthly
       day: monday
       time: "06:00"
       timezone: America/Los_Angeles
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - dependencies
       - backend
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
       maven-minor-and-patch:
         patterns:
@@ -59,11 +70,6 @@ updates:
         update-types:
           - minor
           - patch
-      maven-major:
-        patterns:
-          - "*"
-        update-types:
-          - major
 
   # ---------- GitHub Actions ----------
   # Action versions are a supply-chain surface of their own and are easy to
@@ -72,9 +78,14 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    open-pull-requests-limit: 3
     labels:
       - dependencies
       - ci
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
       actions:
         patterns:
