@@ -13,6 +13,10 @@ export const teamNameToAbbreviation: Record<string, string> = {
   "Indiana Pacers": "IND",
   "LA Clippers": "LAC",
   "Los Angeles Lakers": "LAL",
+  // The teams page builds its lookup key as "<city> <name>", and teams.ts
+  // lists the Lakers' city as "LA" (matching "LA Clippers"). Without this
+  // alias the Lakers tile looks up undefined and returns no players.
+  "LA Lakers": "LAL",
   "Memphis Grizzlies": "MEM",
   "Miami Heat": "MIA",
   "Milwaukee Bucks": "MIL",
