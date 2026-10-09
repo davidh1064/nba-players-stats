@@ -96,6 +96,9 @@ public class SecurityConfig {
                 .httpBasic(Customizer.withDefaults())
                 // Return a bare 401 instead of a WWW-Authenticate challenge, so a
                 // browser hitting the API does not pop a native login dialog.
+                // Scope: this entry point handles requests with NO credentials.
+                // Requests with WRONG credentials go through httpBasic's own entry
+                // point and still get "WWW-Authenticate: Basic" (known, filed).
                 .exceptionHandling(ex ->
                         ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .headers(headers -> headers

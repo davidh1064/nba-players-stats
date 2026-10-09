@@ -33,13 +33,15 @@ class SecurityOverHttpTest {
 
     private static final String ALLOWED_ORIGIN = "http://localhost:3000";
 
-    private final HttpClient http = HttpClient.newHttpClient();
+    // Shared: JUnit creates a test instance per method, so a per-instance client
+    // would leave one unclosed selector thread behind for every test.
+    private static final HttpClient HTTP = HttpClient.newHttpClient();
 
     @LocalServerPort
     private int port;
 
     private HttpResponse<String> send(HttpRequest.Builder request) throws Exception {
-        return http.send(request.build(), HttpResponse.BodyHandlers.ofString());
+        return HTTP.send(request.build(), HttpResponse.BodyHandlers.ofString());
     }
 
     private HttpRequest.Builder request(String path) {
@@ -71,20 +73,47 @@ class SecurityOverHttpTest {
 
     // ---------- error responses must not leak internals ----------
 
-    @Test
-    @DisplayName("Error bodies carry no stack trace, exception class or internal message")
-    void errorBodiesDoNotLeakInternals() throws Exception {
-        // Guards the spring.web.error.include-* settings in application.properties.
-        // Spring Boot 4 stopped reading the old server.error.include-* keys, so
-        // this test is what proves the configured protection is actually bound.
-        HttpResponse<String> response = send(request("/api/players/4242").GET());
+    /**
+     * The query flags a client can add to ask Boot for debug detail. They do
+     * nothing while the spring.web.error.include-* settings are "never", but
+     * leak a full stack trace if one is ever set to "on_param" (a common
+     * "debug" choice). Probing without them let that regression pass silently.
+     */
+    private static final String DEBUG_FLAGS = "?trace=true&message=true&errors=true";
 
-        assertThat(response.statusCode()).isEqualTo(404);
+    private static void assertNoInternals(HttpResponse<String> response) {
         assertThat(response.body())
                 .doesNotContain("\"trace\"")
                 .doesNotContain("\"exception\"")
-                .doesNotContain("Player 4242 not found")
-                .doesNotContain("com.nba.nba_zone");
+                .doesNotContain("\"message\"")
+                .doesNotContain("\"errors\"")
+                .doesNotContain("com.nba.nba_zone")
+                .doesNotContain("java.lang.");
+    }
+
+    @Test
+    @DisplayName("A 404 body leaks no internals, even when the client asks for them")
+    void notFoundBodyDoesNotLeakInternals() throws Exception {
+        // What this proves: no request can extract internals today. What it does
+        // NOT prove: that application.properties is what prevents it. Boot 4's
+        // own defaults are also "never", so deleting those lines stays green —
+        // the guarantee is behavioural. It does catch the settings being turned
+        // up ("always" or "on_param"), which is the regression that matters.
+        HttpResponse<String> response = send(request("/api/players/4242" + DEBUG_FLAGS).GET());
+
+        assertThat(response.statusCode()).isEqualTo(404);
+        assertNoInternals(response);
+    }
+
+    @Test
+    @DisplayName("A 400 body leaks no conversion detail, even when the client asks for it")
+    void badRequestBodyDoesNotLeakInternals() throws Exception {
+        // A type-conversion failure carries the richest internal message
+        // ("Failed to convert value of type 'java.lang.String' ...").
+        HttpResponse<String> response = send(request("/api/players/not-a-number" + DEBUG_FLAGS).GET());
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertNoInternals(response);
     }
 
     // ---------- 401s must not trigger a browser login dialog ----------
@@ -92,9 +121,11 @@ class SecurityOverHttpTest {
     @Test
     @DisplayName("An anonymous write gets a bare 401 with no WWW-Authenticate challenge")
     void unauthorizedHasNoBasicChallenge() throws Exception {
-        // Guards the HttpStatusEntryPoint in SecurityConfig. The default Basic
-        // entry point adds "WWW-Authenticate: Basic", which makes browsers pop a
-        // native username/password dialog over the app.
+        // Guards the HttpStatusEntryPoint in SecurityConfig, which handles requests
+        // that send NO credentials. Scope limit, known and filed separately:
+        // requests with WRONG credentials are rejected by httpBasic's own entry
+        // point and still receive "WWW-Authenticate: Basic" (a browser login
+        // dialog), even on public GETs. This test does not cover that case.
         HttpResponse<String> response = send(request("/api/players/1").DELETE());
 
         assertThat(response.statusCode()).isEqualTo(401);
