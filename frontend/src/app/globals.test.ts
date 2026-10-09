@@ -1,14 +1,17 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll } from "vitest";
-import postcss, { type Root, type Rule } from "postcss";
+import postcss, { type AtRule, type Root, type Rule } from "postcss";
 import tailwindcss from "@tailwindcss/postcss";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 /**
- * Asserts on the stylesheet that actually ships: globals.css compiled by the
- * real Tailwind v4 PostCSS plugin, the same one `next build` uses. jsdom does
- * not apply Tailwind, so a component-level test could not observe this.
+ * Asserts on globals.css as compiled by the real Tailwind v4 PostCSS plugin —
+ * the same compiler `next build` uses. This is the compiler's output before
+ * Next's production optimizer runs; the optimizer later minifies it (e.g. it
+ * drops the quotes in [role='button']) but keeps the rules and their layers.
+ * jsdom does not apply Tailwind, so a component-level test could not observe
+ * any of this.
  */
 const cssPath = fileURLToPath(new URL("./globals.css", import.meta.url));
 
@@ -22,9 +25,10 @@ beforeAll(async () => {
   compiled = result.root;
 });
 
+const normalize = (s: string) => s.replace(/'/g, '"').replace(/\s+/g, "");
+
 /** Every compiled rule whose selector list contains `selector` (quote-insensitive). */
 function rulesMatching(selector: string): Rule[] {
-  const normalize = (s: string) => s.replace(/'/g, '"').replace(/\s+/g, "");
   const wanted = normalize(selector);
   const found: Rule[] = [];
   compiled.walkRules((rule) => {
@@ -33,12 +37,17 @@ function rulesMatching(selector: string): Rule[] {
   return found;
 }
 
-function declares(rules: Rule[], prop: string, value: string): boolean {
-  return rules.some((rule) =>
-    rule.nodes.some(
-      (node) => node.type === "decl" && node.prop === prop && node.value === value,
-    ),
+function setsPointer(rule: Rule): boolean {
+  return rule.nodes.some(
+    (node) => node.type === "decl" && node.prop === "cursor" && node.value === "pointer",
   );
+}
+
+/** The single rule that gives `selector` a pointer cursor; fails if there is not exactly one. */
+function pointerRuleFor(selector: string): Rule {
+  const rules = rulesMatching(selector).filter(setsPointer);
+  expect(rules, `exactly one cursor:pointer rule for ${selector}`).toHaveLength(1);
+  return rules[0];
 }
 
 describe("globals.css as compiled by Tailwind v4", () => {
@@ -55,20 +64,44 @@ describe("globals.css as compiled by Tailwind v4", () => {
   it("gives enabled buttons a pointer cursor", () => {
     // Tailwind v3's preflight did this; v4 dropped it and the upgrade codemod
     // did not restore it, so every button showed the arrow cursor.
-    expect(
-      declares(rulesMatching("button:not(:disabled)"), "cursor", "pointer"),
-    ).toBe(true);
+    pointerRuleFor("button:not(:disabled)");
   });
 
   it('gives enabled role="button" elements a pointer cursor', () => {
-    expect(
-      declares(rulesMatching("[role='button']:not(:disabled)"), "cursor", "pointer"),
-    ).toBe(true);
+    pointerRuleFor("[role='button']:not(:disabled)");
   });
 
-  it("does not give disabled buttons a pointer cursor", () => {
-    // A bare `button { cursor: pointer }` would make disabled buttons look
-    // clickable; the rule must stay scoped to :not(:disabled).
-    expect(declares(rulesMatching("button"), "cursor", "pointer")).toBe(false);
+  it("keeps the rule directly inside @layer base, so cursor-* utilities still win", () => {
+    // The layer is what makes this rule safe. Unlayered CSS beats every layered
+    // utility, and inside @layer utilities its specificity (0,1,1) beats
+    // .cursor-default (0,1,0). Either way, a button given `cursor-default` or
+    // `cursor-wait` would silently show a pointer. The direct parent must be the
+    // base layer itself, which also rules out wrappers like @media print.
+    for (const selector of ["button:not(:disabled)", "[role='button']:not(:disabled)"]) {
+      const parent = pointerRuleFor(selector).parent;
+      expect(parent?.type, `parent of ${selector}`).toBe("atrule");
+      expect((parent as AtRule).name).toBe("layer");
+      expect((parent as AtRule).params).toBe("base");
+    }
+  });
+
+  it("does not give disabled buttons a pointer cursor by any selector", () => {
+    // A disabled button must not look clickable. Covers the careless forms:
+    // a bare selector, which also matches disabled buttons, and explicit
+    // disabled selectors.
+    const forbidden = [
+      "button",
+      "[role='button']",
+      "button:disabled",
+      "button[disabled]",
+      "[role='button']:disabled",
+      "[role='button'][aria-disabled='true']",
+    ];
+    for (const selector of forbidden) {
+      expect(
+        rulesMatching(selector).some(setsPointer),
+        `${selector} must not set cursor:pointer`,
+      ).toBe(false);
+    }
   });
 });
