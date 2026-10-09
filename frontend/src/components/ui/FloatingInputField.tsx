@@ -45,7 +45,7 @@ export const FloatingInputField = React.forwardRef<
           icon && "left-10",
           "peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base",
           "peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-blue-600",
-          hasValue && "!-top-2.5 !text-sm !text-blue-600"
+          hasValue && "-top-2.5! text-sm! text-blue-600!"
         )}
       >
         {label}
