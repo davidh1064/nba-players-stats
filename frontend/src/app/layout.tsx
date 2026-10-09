@@ -19,10 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${inter.className} min-h-full bg-gradient-to-b from-gray-50 to-white`}
+        className={`${inter.className} min-h-full bg-linear-to-b from-gray-50 to-white`}
       >
         <div className="min-h-screen flex flex-col">
-          <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b">
+          <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xs border-b">
             <div className="container mx-auto px-4">
               <Navigation />
             </div>
