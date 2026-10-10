@@ -23,6 +23,10 @@ public class PlayerService {
         return playerRepository.findAll();
     }
 
+    public List<CountryPlayerCount> getCountryPlayerCounts() {
+        return playerRepository.countPlayersByCountry();
+    }
+
     public Player getPlayerById(Long id) {
         return playerRepository.findById(id).orElse(null);
     }

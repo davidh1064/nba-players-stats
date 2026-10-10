@@ -60,6 +60,15 @@ class PlayerServiceTest {
         }
 
         @Test
+        @DisplayName("getCountryPlayerCounts returns the repository's aggregate unchanged")
+        void getCountryPlayerCounts() {
+            List<CountryPlayerCount> counts = List.of(new CountryPlayerCount("USA", 3));
+            when(playerRepository.countPlayersByCountry()).thenReturn(counts);
+
+            assertThat(playerService.getCountryPlayerCounts()).isEqualTo(counts);
+        }
+
+        @Test
         @DisplayName("getPlayerById returns the player when present")
         void getPlayerByIdFound() {
             when(playerRepository.findById(1L)).thenReturn(Optional.of(lebron()));

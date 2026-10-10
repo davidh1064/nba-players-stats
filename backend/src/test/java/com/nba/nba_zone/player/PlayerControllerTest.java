@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -116,6 +117,34 @@ class PlayerControllerTest {
         mockMvc.perform(get("/api/players")).andExpect(status().isOk());
 
         verify(playerService).filterPlayers(null, null, null, null, null);
+    }
+
+    @Test
+    @DisplayName("GET /api/players/countries returns each country with its player count")
+    void countriesReturnsCountsAsJson() throws Exception {
+        when(playerService.getCountryPlayerCounts()).thenReturn(List.of(
+                new CountryPlayerCount("USA", 3),
+                new CountryPlayerCount("Slovenia", 1)));
+
+        mockMvc.perform(get("/api/players/countries"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)))
+                .andExpect(jsonPath("$[0].country").value("USA"))
+                .andExpect(jsonPath("$[0].playerCount").value(3))
+                .andExpect(jsonPath("$[1].country").value("Slovenia"));
+    }
+
+    @Test
+    @DisplayName("GET /api/players/countries is not routed to the /{id} handler")
+    void countriesIsNotParsedAsAnId() throws Exception {
+        // "countries" must hit its own handler. If it fell through to /{id}, it
+        // would fail Long conversion and return 400.
+        when(playerService.getCountryPlayerCounts()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/players/countries")).andExpect(status().isOk());
+
+        verify(playerService).getCountryPlayerCounts();
+        verify(playerService, never()).getPlayerById(any());
     }
 
     @Test

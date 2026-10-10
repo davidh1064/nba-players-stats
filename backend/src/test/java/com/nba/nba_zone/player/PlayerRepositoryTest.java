@@ -84,6 +84,47 @@ class PlayerRepositoryTest {
     }
 
     @Test
+    @DisplayName("countPlayersByCountry counts distinct players, not player-season rows")
+    void countryCountsAreDistinctPlayers() {
+        // A second LeBron season adds a row but not a player.
+        playerRepository.save(player(10L, "LeBron James", "LAL", "2023-24", "None", "USA"));
+
+        assertThat(playerRepository.countPlayersByCountry()).containsExactly(
+                new CountryPlayerCount("USA", 3),
+                new CountryPlayerCount("Slovenia", 1));
+    }
+
+    @Test
+    @DisplayName("countPlayersByCountry orders by count descending, then by name")
+    void countryCountsOrderedByCountThenName() {
+        // Serbia and Slovenia tie at 1; the tie must break alphabetically.
+        playerRepository.save(player(11L, "Nikola Jokic", "DEN", "2023-24", "None", "Serbia"));
+
+        assertThat(playerRepository.countPlayersByCountry())
+                .extracting(CountryPlayerCount::country)
+                .containsExactly("USA", "Serbia", "Slovenia");
+    }
+
+    @Test
+    @DisplayName("countPlayersByCountry ignores rows with a null or blank country")
+    void countryCountsIgnoreMissingCountry() {
+        playerRepository.save(player(12L, "No Country", "BOS", "2023-24", "None", null));
+        playerRepository.save(player(13L, "Blank Country", "BOS", "2023-24", "None", "   "));
+
+        assertThat(playerRepository.countPlayersByCountry())
+                .extracting(CountryPlayerCount::country)
+                .containsExactly("USA", "Slovenia");
+    }
+
+    @Test
+    @DisplayName("countPlayersByCountry returns an empty list for an empty table")
+    void countryCountsEmptyTable() {
+        playerRepository.deleteAll();
+
+        assertThat(playerRepository.countPlayersByCountry()).isEmpty();
+    }
+
+    @Test
     @DisplayName("existsById reflects presence and absence")
     void existsById() {
         assertThat(playerRepository.existsById(1L)).isTrue();

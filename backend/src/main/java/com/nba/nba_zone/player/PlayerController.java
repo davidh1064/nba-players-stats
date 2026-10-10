@@ -36,6 +36,19 @@ public class PlayerController {
         return playerService.filterPlayers(playerName, teamName, season, college, country);
     }
 
+    /**
+     * Each country with its number of distinct players, for the Countries page.
+     * Public, like every other GET on this controller.
+     *
+     * <p>Why this does not collide with {@code /{id}}: Spring ranks a literal
+     * path segment above a path variable, so "countries" is never parsed as an
+     * id. PlayerControllerTest pins that.
+     */
+    @GetMapping("/countries")
+    public List<CountryPlayerCount> getCountryPlayerCounts() {
+        return playerService.getCountryPlayerCounts();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Player> getPlayerById(@PathVariable Long id) {
         Player player = playerService.getPlayerById(id);
