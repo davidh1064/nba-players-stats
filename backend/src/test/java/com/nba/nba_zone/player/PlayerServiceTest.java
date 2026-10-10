@@ -60,12 +60,36 @@ class PlayerServiceTest {
         }
 
         @Test
-        @DisplayName("getCountryPlayerCounts returns the repository's aggregate unchanged")
-        void getCountryPlayerCounts() {
-            List<CountryPlayerCount> counts = List.of(new CountryPlayerCount("USA", 3));
-            when(playerRepository.countPlayersByCountry()).thenReturn(counts);
+        @DisplayName("getCountryPlayerCounts orders by count descending, ties alphabetically")
+        void getCountryPlayerCountsOrdersDeterministically() {
+            // The repository's tie order depends on database collation, so the
+            // service must impose the final order. Feed it deliberately
+            // scrambled rows: the ties are reverse-alphabetical and the counts
+            // are out of order.
+            when(playerRepository.countPlayersByCountry()).thenReturn(List.of(
+                    new CountryPlayerCount("Slovenia", 1),
+                    new CountryPlayerCount("Greece", 1),
+                    new CountryPlayerCount("USA", 3),
+                    new CountryPlayerCount("Argentina", 1),
+                    new CountryPlayerCount("Canada", 2)));
 
-            assertThat(playerService.getCountryPlayerCounts()).isEqualTo(counts);
+            assertThat(playerService.getCountryPlayerCounts())
+                    .extracting(CountryPlayerCount::country)
+                    .containsExactly("USA", "Canada", "Argentina", "Greece", "Slovenia");
+        }
+
+        @Test
+        @DisplayName("getCountryPlayerCounts uses code-point order, independent of locale")
+        void getCountryPlayerCountsTieOrderIsCodePoint() {
+            // Under an en_US collation "usa" and "USA" interleave; code-point order
+            // always puts uppercase first, the same on every database.
+            when(playerRepository.countPlayersByCountry()).thenReturn(List.of(
+                    new CountryPlayerCount("usa", 1),
+                    new CountryPlayerCount("USA", 1)));
+
+            assertThat(playerService.getCountryPlayerCounts())
+                    .extracting(CountryPlayerCount::country)
+                    .containsExactly("USA", "usa");
         }
 
         @Test

@@ -96,15 +96,28 @@ The frontend of the application is built with **Next.js 14 (App Router)** and st
 You need three things running: **PostgreSQL** (the data), the **backend**
 (Spring Boot API on port 8080), and the **frontend** (Next.js on port 3000).
 
+Run every command below from the **project folder** (the one containing
+`backend/` and `frontend/`), e.g. `cd ~/nba-players-stats`, unless a step says
+otherwise.
+
 ### 1. Install the tools (one time)
 
 | Tool | Version | Check | Install (macOS) |
 |---|---|---|---|
-| Java | 21 | `java -version` | `brew install openjdk@21` |
-| Node.js | 22+ | `node -v` | `brew install node@22` |
+| Java | 21 | `java -version` | `brew install --cask temurin@21` (asks for your Mac password) |
+| Node.js | 22.12+, 24 or 26 | `node -v` | the **LTS** installer from [nodejs.org](https://nodejs.org) |
 | PostgreSQL | 14+ | `psql --version` | `brew install postgresql@14` |
 
-Maven is not needed. The backend ships its own (`./mvnw`).
+- **Avoid Node 23 and 25.** The frontend test runner (Vitest 5) refuses them.
+  LTS releases are always even-numbered, so the nodejs.org LTS installer is safe.
+- **Why not `brew install openjdk@21` / `node@22`?** Homebrew installs those
+  "keg-only": they are **not** put on your PATH, so `java` / `node` still won't
+  be found afterwards. The cask and installer above need no extra setup. If you
+  prefer `node@22`, also run this and then open a new terminal:
+  ```bash
+  echo 'export PATH="$(brew --prefix node@22)/bin:$PATH"' >> ~/.zshrc
+  ```
+- Maven is not needed. The backend ships its own (`./mvnw`).
 
 ### 2. Start PostgreSQL
 
@@ -167,10 +180,11 @@ curl http://localhost:8080/api/players/countries
 
 ### 6. Start the frontend
 
-In a **second** terminal:
+Open a **second** terminal. New terminals start in your home folder, so go to
+the project first (adjust the path if you cloned it elsewhere):
 
 ```bash
-cd frontend
+cd ~/nba-players-stats/frontend
 npm ci        # first time, or after dependencies change
 npm run dev
 ```
@@ -180,9 +194,12 @@ Open <http://localhost:3000>. To stop either server, press `Ctrl+C` in its termi
 ### Running the tests
 
 ```bash
-cd backend && ./mvnw verify    # backend: runs on an in-memory database, no PostgreSQL needed
-cd frontend && npm test        # frontend
+(cd backend && ./mvnw verify)   # backend: in-memory database, no PostgreSQL needed
+(cd frontend && npm test)       # frontend
 ```
+
+The parentheses run each command in its own subshell, so you stay in the
+project folder and can paste both lines at once.
 
 ### Troubleshooting
 

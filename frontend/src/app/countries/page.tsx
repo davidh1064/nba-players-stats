@@ -8,7 +8,7 @@ import { Search, Globe } from "lucide-react";
 import { Player, playerService } from "@/lib/services/playerService";
 import { toast } from "sonner";
 import { useCountryStore } from "@/lib/stores/useCountryStore";
-import { toCountryCards } from "@/lib/utils/countryUtils";
+import { playersFromExactCountry, toCountryCards } from "@/lib/utils/countryUtils";
 import PlayerStatsTable from "@/components/tables/PlayerStatsTable";
 import PlayerDetailsModal from "@/components/modals/PlayerDetailsModal";
 import { usePlayerData } from "@/hooks/usePlayerData";
@@ -28,6 +28,10 @@ export default function CountriesPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCountries, setVisibleCountries] = useState(12);
+  // Why: before the first fetch finishes, the list is empty and isLoading is
+  // still false, so the "no data loaded" hint would flash on every cold load.
+  // Only show empty states once a fetch has actually completed.
+  const [hasFetched, setHasFetched] = useState(false);
   const [selectedCountry, setSelectedCountry] =
     useState<CountryWithPlayers | null>(null);
   const {
@@ -49,7 +53,10 @@ export default function CountriesPage() {
 
   useEffect(() => {
     const fetchCountries = async () => {
-      if (countries.length > 0) return;
+      if (countries.length > 0) {
+        setHasFetched(true);
+        return;
+      }
       try {
         setLoading(true);
         setError(null);
@@ -65,6 +72,7 @@ export default function CountriesPage() {
         toast.error("Failed to fetch countries. Please try again.");
       } finally {
         setLoading(false);
+        setHasFetched(true);
       }
     };
 
@@ -86,7 +94,10 @@ export default function CountriesPage() {
       const newUrl = `/countries?${queryParams.toString()}`;
       router.push(newUrl);
 
-      const players = await playerService.getPlayers({ country: countryName });
+      const players = playersFromExactCountry(
+        await playerService.getPlayers({ country: countryName }),
+        countryName
+      );
       setSelectedCountry({ ...country, players });
       handleSuccess(players);
     } catch (error) {
@@ -137,7 +148,7 @@ export default function CountriesPage() {
             </div>
           </div>
 
-          {isLoading ? (
+          {isLoading || !hasFetched ? (
             <div className="text-center text-gray-600">
               Loading countries...
             </div>

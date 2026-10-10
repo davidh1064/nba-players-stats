@@ -43,6 +43,11 @@ export const COUNTRY_FLAG_CODES: Record<string, string> = {
   "St. Vincent & Grenadines": "vc",
   "St. Vincent and the Grenadines": "vc",
   "Antigua and Barbuda": "ag",
+  "Saint Kitts and Nevis": "kn",
+  "St. Kitts and Nevis": "kn",
+  Guadeloupe: "gp",
+  Martinique: "mq",
+  "French Guiana": "gf",
   Bermuda: "bm",
   Belize: "bz",
   Panama: "pa",
@@ -64,6 +69,7 @@ export const COUNTRY_FLAG_CODES: Record<string, string> = {
   Greece: "gr",
   Turkey: "tr",
   Türkiye: "tr",
+  Turkiye: "tr",
   Serbia: "rs",
   Croatia: "hr",
   Slovenia: "si",
@@ -71,6 +77,7 @@ export const COUNTRY_FLAG_CODES: Record<string, string> = {
   "Bosnia and Herzegovina": "ba",
   "Bosnia & Herzegovina": "ba",
   Bosnia: "ba",
+  "Bosnia-Herzegovina": "ba",
   Macedonia: "mk",
   "North Macedonia": "mk",
   "Republic of North Macedonia": "mk",
@@ -134,6 +141,7 @@ export const COUNTRY_FLAG_CODES: Record<string, string> = {
   "Ivory Coast": "ci",
   "Côte d'Ivoire": "ci",
   "Cote d'Ivoire": "ci",
+  "Côte d’Ivoire": "ci", // curly apostrophe variant
   Tunisia: "tn",
   Morocco: "ma",
   Algeria: "dz",
@@ -181,6 +189,23 @@ export function getFlagUrl(country: string): string | null {
   const key = country.trim();
   const code = COUNTRY_FLAG_CODES[key] ?? FLAG_CODES_LOWER[key.toLowerCase()];
   return code ? `https://flagcdn.com/${code}.svg` : null;
+}
+
+/**
+ * Keeps only rows whose country is exactly `country`.
+ *
+ * Why: the backend's ?country= filter matches case-insensitive SUBSTRINGS
+ * (needed by the search page, where "slov" should find Slovenia). So
+ * ?country=Serbia also returns "Serbia and Montenegro" players, Sudan also
+ * returns South Sudan, and Dominica also returns the Dominican Republic. A
+ * country card's count uses exact names, so its drill-down must too, or the
+ * card and its table disagree.
+ */
+export function playersFromExactCountry<T extends { country?: string | null }>(
+  players: T[],
+  country: string,
+): T[] {
+  return players.filter((p) => p.country === country);
 }
 
 /** One row of GET /api/players/countries. */

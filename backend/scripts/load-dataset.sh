@@ -50,13 +50,25 @@ command -v psql >/dev/null || die "psql not found. Install PostgreSQL (brew inst
 # The dataset's header. Its first column is the unnamed row number, which
 # becomes the player row's id.
 EXPECTED_HEADER=',player_name,team_abbreviation,age,player_height,player_weight,college,country,draft_year,draft_round,draft_number,gp,pts,reb,ast,net_rating,oreb_pct,dreb_pct,usg_pct,ts_pct,ast_pct,season'
-ACTUAL_HEADER="$(head -1 "$CSV" | tr -d '\r\357\273\277')"   # strip CRLF and a UTF-8 BOM
+# Strip a CRLF line ending and a UTF-8 byte-order mark before comparing.
+# Why LC_ALL=C: in a UTF-8 locale (the macOS Terminal default) BSD tr reads
+# \357\273\277 as three characters rather than three bytes, so the BOM survived
+# and a valid file was rejected with an identical-looking header.
+ACTUAL_HEADER="$(head -1 "$CSV" | LC_ALL=C tr -d '\r\357\273\277')"
 if [ "$ACTUAL_HEADER" != "$EXPECTED_HEADER" ]; then
   echo "error: $CSV does not look like the Kaggle all_seasons.csv." >&2
   echo "  expected header: $EXPECTED_HEADER" >&2
-  echo "  actual header:   $ACTUAL_HEADER" >&2
+  # cat -v makes invisible characters visible (e.g. M-oM-;M-? for a BOM).
+  echo "  actual header:   $(printf '%s' "$ACTUAL_HEADER" | LC_ALL=C cat -v)" >&2
   exit 1
 fi
+
+# Refuse a file with no data rows before touching any database. Combined with
+# --replace, a header-only (e.g. truncated) file would otherwise empty the table
+# and still report success. awk counts a last line even without a newline.
+DATA_ROWS=$(( $(LC_ALL=C awk 'END { print NR }' "$CSV") - 1 ))
+[ "$DATA_ROWS" -ge 1 ] || die "$CSV has a header but no data rows; nothing to load."
+
 
 # Local connection only: no host given, so psql uses this machine's socket.
 pg() { psql -X -v ON_ERROR_STOP=1 -q "$@"; }

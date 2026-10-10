@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.nba.nba_zone.player.PlayerTestData.all;
@@ -95,14 +96,18 @@ class PlayerRepositoryTest {
     }
 
     @Test
-    @DisplayName("countPlayersByCountry orders by count descending, then by name")
-    void countryCountsOrderedByCountThenName() {
-        // Serbia and Slovenia tie at 1; the tie must break alphabetically.
+    @DisplayName("countPlayersByCountry puts the largest country first")
+    void countryCountsLargestFirst() {
+        // Only count order is the query's job. Tie order depends on collation,
+        // so PlayerService sorts ties (see PlayerServiceTest). An earlier version
+        // of this test claimed to check the alphabetical tie-break, but H2 returned
+        // that order even with the tie-break deleted.
         playerRepository.save(player(11L, "Nikola Jokic", "DEN", "2023-24", "None", "Serbia"));
 
-        assertThat(playerRepository.countPlayersByCountry())
-                .extracting(CountryPlayerCount::country)
-                .containsExactly("USA", "Serbia", "Slovenia");
+        List<CountryPlayerCount> counts = playerRepository.countPlayersByCountry();
+        assertThat(counts.get(0)).isEqualTo(new CountryPlayerCount("USA", 3));
+        assertThat(counts).extracting(CountryPlayerCount::country)
+                .containsExactlyInAnyOrder("USA", "Serbia", "Slovenia");
     }
 
     @Test

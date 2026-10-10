@@ -166,6 +166,30 @@ describe("useCountryStore", () => {
     expect(useCountryStore.getState().countries.map((c) => c.name)).toEqual(["USA"]);
   });
 
+  it("expires saved countries older than 24 hours when loading them", async () => {
+    // The page skips its fetch whenever countries are present, so anything
+    // reloaded here is shown as-is. Expiry must apply on load, not only on save.
+    const twoDaysAgo = Date.now() - 48 * 60 * 60 * 1000;
+    localStorage.setItem(
+      "country-store",
+      JSON.stringify({
+        state: {
+          countries: [
+            { name: "Stale", flag: null, playerCount: 1, lastUpdated: twoDaysAgo },
+            { name: "Fresh", flag: null, playerCount: 1, lastUpdated: Date.now() },
+          ],
+        },
+        version: 1,
+      }),
+    );
+
+    await act(async () => {
+      await useCountryStore.persist.rehydrate();
+    });
+
+    expect(useCountryStore.getState().countries.map((c) => c.name)).toEqual(["Fresh"]);
+  });
+
   it("shares state across separate consumers of the hook", () => {
     // The store is global; the countries page and any other consumer must see
     // the same data rather than independent copies.

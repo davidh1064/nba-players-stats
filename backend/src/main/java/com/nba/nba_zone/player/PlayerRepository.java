@@ -15,7 +15,9 @@ public interface PlayerRepository extends JpaRepository<Player, Long>, JpaSpecif
     Optional<Player> findPlayerById(Long id);
 
     /**
-     * Distinct players per country, largest first, ties broken alphabetically.
+     * Distinct players per country, largest first. Tie order is NOT guaranteed
+     * here: it would depend on the database's collation (C vs en_US.UTF-8 order
+     * names differently). PlayerService applies the deterministic final order.
      *
      * <p>Why one aggregate query: the Countries page used to fetch every
      * country from a third-party API and then call the backend once per
@@ -33,7 +35,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long>, JpaSpecif
             FROM Player p
             WHERE p.country IS NOT NULL AND TRIM(p.country) <> ''
             GROUP BY p.country
-            ORDER BY COUNT(DISTINCT p.playerName) DESC, p.country ASC
+            ORDER BY COUNT(DISTINCT p.playerName) DESC
             """)
     List<CountryPlayerCount> countPlayersByCountry();
 }

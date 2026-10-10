@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { COUNTRY_FLAG_CODES, getFlagUrl, toCountryCards } from "./countryUtils";
+import { COUNTRY_FLAG_CODES, getFlagUrl, playersFromExactCountry, toCountryCards } from "./countryUtils";
 
 describe("getFlagUrl", () => {
   it("builds a flagcdn SVG URL for a known dataset spelling", () => {
@@ -22,6 +22,13 @@ describe("getFlagUrl", () => {
     expect(getFlagUrl("  slovenia ")).toBe("https://flagcdn.com/si.svg");
   });
 
+  it("covers alternative spellings found in NBA data", () => {
+    expect(getFlagUrl("Bosnia-Herzegovina")).toBe("https://flagcdn.com/ba.svg");
+    expect(getFlagUrl("Turkiye")).toBe("https://flagcdn.com/tr.svg");
+    expect(getFlagUrl("Côte d’Ivoire")).toBe("https://flagcdn.com/ci.svg");
+    expect(getFlagUrl("St. Kitts and Nevis")).toBe("https://flagcdn.com/kn.svg");
+  });
+
   it("returns null for a state with no current flag, so the card shows a placeholder", () => {
     expect(getFlagUrl("Yugoslavia")).toBeNull();
     expect(getFlagUrl("Serbia and Montenegro")).toBeNull();
@@ -30,6 +37,44 @@ describe("getFlagUrl", () => {
   it("returns null for an unknown or empty name rather than a broken URL", () => {
     expect(getFlagUrl("Atlantis")).toBeNull();
     expect(getFlagUrl("")).toBeNull();
+  });
+});
+
+describe("playersFromExactCountry", () => {
+  // The backend's ?country= filter matches substrings, so these are the real
+  // over-matches an adversarial review found on PostgreSQL.
+  const rows = [
+    { name: "Nikola Jokic", country: "Serbia" },
+    { name: "Peja Stojakovic", country: "Serbia and Montenegro" },
+    { name: "Bol Bol", country: "Sudan" },
+    { name: "Wenyen Gabriel", country: "South Sudan" },
+    { name: "Al Horford", country: "Dominican Republic" },
+    { name: "Someone", country: "Dominica" },
+    { name: "A", country: "USA" },
+    { name: "B", country: "usa" },
+    { name: "C", country: "USA " },
+    { name: "D", country: null },
+  ];
+  const names = (country: string) => playersFromExactCountry(rows, country).map((r) => r.name);
+
+  it("does not include 'Serbia and Montenegro' players under Serbia", () => {
+    expect(names("Serbia")).toEqual(["Nikola Jokic"]);
+  });
+
+  it("does not include South Sudan under Sudan", () => {
+    expect(names("Sudan")).toEqual(["Bol Bol"]);
+  });
+
+  it("does not include the Dominican Republic under Dominica", () => {
+    expect(names("Dominica")).toEqual(["Someone"]);
+  });
+
+  it("matches the exact string, as the card's count does (case and whitespace matter)", () => {
+    expect(names("USA")).toEqual(["A"]);
+  });
+
+  it("returns nothing for a name with no exact match", () => {
+    expect(names("Montenegro")).toEqual([]);
   });
 });
 
