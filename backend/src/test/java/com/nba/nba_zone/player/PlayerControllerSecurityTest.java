@@ -34,6 +34,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>These assertions are the regression guard for the vulnerability this
  * configuration closed — before it, every request below succeeded unauthenticated.
+ *
+ * <p>Rules that only take effect on a real server — the ERROR dispatch, error
+ * response contents, CORS preflight and the bare-401 entry point — cannot be
+ * tested with MockMvc, which skips Boot's /error forward. They are covered by
+ * {@link com.nba.nba_zone.config.SecurityOverHttpTest}.
  */
 @WebMvcTest(PlayerController.class)
 @Import(SecurityConfig.class)
@@ -75,18 +80,6 @@ class PlayerControllerSecurityTest {
 
         mockMvc.perform(get("/api/players/1"))
                 .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("An anonymous miss returns 404, not a misleading 401")
-    void anonymousNotFoundIsNotMaskedAsUnauthorized() throws Exception {
-        // Regression guard: Boot renders errors by forwarding to /error, and that
-        // forward re-enters the filter chain. Without the ERROR dispatch rule this
-        // 404 comes back to the client as a 401.
-        when(playerService.getPlayerById(4242L)).thenReturn(null);
-
-        mockMvc.perform(get("/api/players/4242"))
-                .andExpect(status().isNotFound());
     }
 
     @Test

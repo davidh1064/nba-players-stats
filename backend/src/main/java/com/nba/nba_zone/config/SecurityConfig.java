@@ -83,8 +83,11 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // Browsers send a credential-less preflight; it must not 401.
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Both spellings: "/api/players/**" alone does not cover the
-                        // bare "/api/players/" that a client with a trailing slash sends.
+                        // "/api/players/" is listed explicitly as a safeguard. It was required
+                        // on Spring Boot 3, where "/api/players/**" did not match the bare
+                        // trailing-slash path and such reads fell through to the admin rule.
+                        // On Boot 4 the "**" pattern covers it and this entry is redundant
+                        // (verified by mutation); SecurityOverHttpTest guards the behaviour.
                         .requestMatchers(HttpMethod.GET, "/api/players", "/api/players/", "/api/players/**")
                         .permitAll()
                         .requestMatchers("/actuator/health").permitAll()
@@ -93,6 +96,9 @@ public class SecurityConfig {
                 .httpBasic(Customizer.withDefaults())
                 // Return a bare 401 instead of a WWW-Authenticate challenge, so a
                 // browser hitting the API does not pop a native login dialog.
+                // Scope: this entry point handles requests with NO credentials.
+                // Requests with WRONG credentials go through httpBasic's own entry
+                // point and still get "WWW-Authenticate: Basic" (known, filed).
                 .exceptionHandling(ex ->
                         ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .headers(headers -> headers
