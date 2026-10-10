@@ -61,8 +61,8 @@ The frontend of the application is built with **Next.js 14 (App Router)** and st
 ![image](https://github.com/user-attachments/assets/ea3098e7-b134-4272-ba97-4f7585420973)
 
 ### 🌍 Countries Page
-- Dynamically loads countries using RestCountries API
-- Shows a flag grid and number of players per country
+- Lists every country in the dataset with its number of distinct players, from a single API call (`GET /api/players/countries`)
+- Shows a flag grid (flags from [flagcdn.com](https://flagcdn.com)); countries with no current flag, such as Yugoslavia, show a globe placeholder
 - Clicking a country displays player data in a scrollable stats table
 
 ![image](https://github.com/user-attachments/assets/d2527f04-65ea-45cb-bb1a-7dd87d14158a)
@@ -93,36 +93,125 @@ The frontend of the application is built with **Next.js 14 (App Router)** and st
 
 ## Running locally
 
-### Backend
+You need three things running: **PostgreSQL** (the data), the **backend**
+(Spring Boot API on port 8080), and the **frontend** (Next.js on port 3000).
 
-Copy `backend/.env.example` to `backend/.env` and fill it in:
+Run every command below from the **project folder** (the one containing
+`backend/` and `frontend/`), e.g. `cd ~/nba-players-stats`, unless a step says
+otherwise.
+
+### 1. Install the tools (one time)
+
+| Tool | Version | Check | Install (macOS) |
+|---|---|---|---|
+| Java | 21 | `java -version` | `brew install --cask temurin@21` (asks for your Mac password) |
+| Node.js | 22.12+, 24 or 26 | `node -v` | the **LTS** installer from [nodejs.org](https://nodejs.org) |
+| PostgreSQL | 14+ | `psql --version` | `brew install postgresql@14` |
+
+- **Avoid Node 23 and 25.** The frontend test runner (Vitest 5) refuses them.
+  LTS releases are always even-numbered, so the nodejs.org LTS installer is safe.
+- **Why not `brew install openjdk@21` / `node@22`?** Homebrew installs those
+  "keg-only": they are **not** put on your PATH, so `java` / `node` still won't
+  be found afterwards. The cask and installer above need no extra setup. If you
+  prefer `node@22`, also run this and then open a new terminal:
+  ```bash
+  echo 'export PATH="$(brew --prefix node@22)/bin:$PATH"' >> ~/.zshrc
+  ```
+- Maven is not needed. The backend ships its own (`./mvnw`).
+
+### 2. Start PostgreSQL
+
+```bash
+brew services start postgresql@14
+```
+
+This also starts it automatically at login. Use `brew services run postgresql@14`
+instead to run it only until you log out or reboot.
+
+### 3. Load the player data (one time)
+
+The data is not stored in this repository. It is the public Kaggle dataset
+[**NBA Players**](https://www.kaggle.com/datasets/justinas/nba-players-data).
+Sign in to Kaggle (free), download it, and unzip it to get `all_seasons.csv`.
+Then load it:
+
+```bash
+backend/scripts/load-dataset.sh ~/Downloads/all_seasons.csv
+```
+
+This creates a local database named `nba` and fills its `player_stats` table.
+The script:
+- checks the file really is that dataset before loading anything;
+- only connects to the PostgreSQL on your own machine, never the one in `.env`;
+- refuses to overwrite existing rows unless you add `--replace`;
+- loads all-or-nothing, so a failure leaves the table as it was.
+
+### 4. Configure the backend (one time)
 
 ```bash
 cp backend/.env.example backend/.env
 ```
 
-`ADMIN_USERNAME` and `ADMIN_PASSWORD` are **required** — the application refuses
-to start without them, rather than falling back to a default credential. Generate
-a password with:
+Open `backend/.env` and set:
+
+| Setting | Value |
+|---|---|
+| `DB_USERNAME` | On Homebrew, **your macOS username** (`whoami`). There is no `postgres` user on a Homebrew install. |
+| `DB_PASSWORD` | Leave empty. Homebrew's local setup needs none. |
+| `ADMIN_PASSWORD` | Required, at least 12 characters. Generate one with `openssl rand -base64 24`. |
+
+`ADMIN_USERNAME` / `ADMIN_PASSWORD` protect the write endpoints. The backend
+refuses to start without them rather than falling back to a default.
+`backend/.env` is gitignored, so it never gets committed.
+
+### 5. Start the backend
 
 ```bash
-openssl rand -base64 24
+cd backend
+./mvnw spring-boot:run
 ```
 
-Then:
+Leave this terminal open. It is ready when the log says `Started NbaZoneApplication`.
+Check it from another terminal:
 
 ```bash
-cd backend && ./mvnw spring-boot:run
+curl http://localhost:8080/api/players/countries
 ```
 
-### Frontend
+### 6. Start the frontend
+
+Open a **second** terminal. New terminals start in your home folder, so go to
+the project first (adjust the path if you cloned it elsewhere):
 
 ```bash
-cd frontend && npm ci && npm run dev
+cd ~/nba-players-stats/frontend
+npm ci        # first time, or after dependencies change
+npm run dev
 ```
 
-If the backend is not on `http://localhost:8080`, set `NEXT_PUBLIC_API_BASE_URL`
-in `frontend/.env.local` (see `frontend/.env.example`).
+Open <http://localhost:3000>. To stop either server, press `Ctrl+C` in its terminal.
+
+### Running the tests
+
+```bash
+(cd backend && ./mvnw verify)   # backend: in-memory database, no PostgreSQL needed
+(cd frontend && npm test)       # frontend
+```
+
+The parentheses run each command in its own subshell, so you stay in the
+project folder and can paste both lines at once.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Backend: `FATAL: role "postgres" does not exist` | Set `DB_USERNAME` in `backend/.env` to your macOS username (`whoami`). |
+| Backend: `Connection refused` to `localhost:5432` | PostgreSQL is not running: `brew services start postgresql@14`. |
+| Backend: `app.security.admin-password is not set` | Set `ADMIN_PASSWORD` in `backend/.env` (step 4). |
+| Backend: `Port 8080 was already in use` | Another backend is still running. Stop it with `Ctrl+C`, or find it with `lsof -i :8080`. |
+| Pages load but show no players or countries | The data is not loaded (step 3), or the backend is not running. |
+| Loader: `already has N rows` | Expected when re-running. Add `--replace` to reload. |
+| Frontend talks to the wrong backend | Set `NEXT_PUBLIC_API_BASE_URL` in `frontend/.env.local` (see `frontend/.env.example`). |
 
 ## API access control
 
@@ -131,6 +220,7 @@ Reads are public. Writes require the admin credentials over HTTP Basic.
 | Endpoint | Auth |
 |---|---|
 | `GET /api/players` | public |
+| `GET /api/players/countries` | public |
 | `GET /api/players/{id}` | public |
 | `POST /api/players` | admin |
 | `PUT /api/players` | admin |

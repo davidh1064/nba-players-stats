@@ -110,6 +110,24 @@ describe("playerService", () => {
     });
   });
 
+  describe("getCountryCounts", () => {
+    it("makes a single request to /players/countries and returns the rows", async () => {
+      // One request replaces the old page's ~250 per-country lookups.
+      const rows = [{ country: "USA", playerCount: 3 }];
+      mockedApi.get.mockResolvedValue({ data: rows });
+
+      expect(await playerService.getCountryCounts()).toEqual(rows);
+      expect(mockedApi.get).toHaveBeenCalledTimes(1);
+      expect(mockedApi.get).toHaveBeenCalledWith("/players/countries");
+    });
+
+    it("rethrows so the page can show its error state", async () => {
+      mockedApi.get.mockRejectedValue(new Error("down"));
+
+      await expect(playerService.getCountryCounts()).rejects.toThrow("down");
+    });
+  });
+
   describe("filtered lookups", () => {
     it("getPlayersByTeam sends the abbreviation as teamName", async () => {
       mockedApi.get.mockResolvedValue({ data: [] });

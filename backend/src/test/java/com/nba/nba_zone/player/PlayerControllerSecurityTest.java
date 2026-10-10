@@ -89,6 +89,15 @@ class PlayerControllerSecurityTest {
                 .andExpect(status().is(not(401)));
     }
 
+    @Test
+    @DisplayName("GET /api/players/countries is reachable without credentials")
+    void countriesIsPublic() throws Exception {
+        when(playerService.getCountryPlayerCounts()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/players/countries"))
+                .andExpect(status().isOk());
+    }
+
     // ---------- writes are rejected without credentials ----------
 
     @Test

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.nba.nba_zone.player.PlayerTestData.all;
@@ -81,6 +82,51 @@ class PlayerRepositoryTest {
 
         assertThat(playerRepository.findAll()).hasSize(4);
         assertThat(playerRepository.findById(1L).orElseThrow().getPlayerName()).isEqualTo("Changed");
+    }
+
+    @Test
+    @DisplayName("countPlayersByCountry counts distinct players, not player-season rows")
+    void countryCountsAreDistinctPlayers() {
+        // A second LeBron season adds a row but not a player.
+        playerRepository.save(player(10L, "LeBron James", "LAL", "2023-24", "None", "USA"));
+
+        assertThat(playerRepository.countPlayersByCountry()).containsExactly(
+                new CountryPlayerCount("USA", 3),
+                new CountryPlayerCount("Slovenia", 1));
+    }
+
+    @Test
+    @DisplayName("countPlayersByCountry puts the largest country first")
+    void countryCountsLargestFirst() {
+        // Only count order is the query's job. Tie order depends on collation,
+        // so PlayerService sorts ties (see PlayerServiceTest). An earlier version
+        // of this test claimed to check the alphabetical tie-break, but H2 returned
+        // that order even with the tie-break deleted.
+        playerRepository.save(player(11L, "Nikola Jokic", "DEN", "2023-24", "None", "Serbia"));
+
+        List<CountryPlayerCount> counts = playerRepository.countPlayersByCountry();
+        assertThat(counts.get(0)).isEqualTo(new CountryPlayerCount("USA", 3));
+        assertThat(counts).extracting(CountryPlayerCount::country)
+                .containsExactlyInAnyOrder("USA", "Serbia", "Slovenia");
+    }
+
+    @Test
+    @DisplayName("countPlayersByCountry ignores rows with a null or blank country")
+    void countryCountsIgnoreMissingCountry() {
+        playerRepository.save(player(12L, "No Country", "BOS", "2023-24", "None", null));
+        playerRepository.save(player(13L, "Blank Country", "BOS", "2023-24", "None", "   "));
+
+        assertThat(playerRepository.countPlayersByCountry())
+                .extracting(CountryPlayerCount::country)
+                .containsExactly("USA", "Slovenia");
+    }
+
+    @Test
+    @DisplayName("countPlayersByCountry returns an empty list for an empty table")
+    void countryCountsEmptyTable() {
+        playerRepository.deleteAll();
+
+        assertThat(playerRepository.countPlayersByCountry()).isEmpty();
     }
 
     @Test

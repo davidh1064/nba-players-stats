@@ -3,7 +3,6 @@ import { act, renderHook } from "@testing-library/react";
 import { useCountryStore } from "./useCountryStore";
 
 const country = (overrides: Partial<Record<string, unknown>> = {}) => ({
-  code: "US",
   name: "United States",
   flag: "https://flagcdn.com/us.svg",
   playerCount: 400,
@@ -37,7 +36,7 @@ describe("useCountryStore", () => {
   it("setCountries stores the countries", () => {
     const { result } = renderHook(() => useCountryStore());
 
-    act(() => result.current.setCountries([country(), country({ code: "SI" })]));
+    act(() => result.current.setCountries([country(), country({ name: "Slovenia" })]));
 
     expect(result.current.countries).toHaveLength(2);
     expect(result.current.countries[0].name).toBe("United States");
@@ -60,10 +59,10 @@ describe("useCountryStore", () => {
     const { result } = renderHook(() => useCountryStore());
 
     act(() => result.current.setCountries([country()]));
-    act(() => result.current.setCountries([country({ code: "SI" })]));
+    act(() => result.current.setCountries([country({ name: "Slovenia" })]));
 
     expect(result.current.countries).toHaveLength(1);
-    expect(result.current.countries[0].code).toBe("SI");
+    expect(result.current.countries[0].name).toBe("Slovenia");
   });
 
   it("setLoading toggles the loading flag", () => {
@@ -107,6 +106,88 @@ describe("useCountryStore", () => {
     act(() => result.current.clearStore());
 
     expect(result.current.isLoading).toBe(true);
+  });
+
+  it("accepts a country with no known flag", () => {
+    const { result } = renderHook(() => useCountryStore());
+
+    act(() => result.current.setCountries([country({ name: "Yugoslavia", flag: null })]));
+
+    expect(result.current.countries[0].flag).toBeNull();
+  });
+
+  it("discards data persisted by the restcountries-era store (version 0)", async () => {
+    // Pre-v1 entries used restcountries spellings and a `code` field. If they
+    // were rehydrated, the page would show names the backend cannot query.
+    localStorage.setItem(
+      "country-store",
+      JSON.stringify({
+        state: {
+          countries: [
+            {
+              code: "US",
+              name: "United States",
+              flag: "https://flagcdn.com/us.svg",
+              playerCount: 400,
+              lastUpdated: Date.now(),
+            },
+          ],
+        },
+        version: 0,
+      }),
+    );
+
+    await act(async () => {
+      await useCountryStore.persist.rehydrate();
+    });
+
+    expect(useCountryStore.getState().countries).toEqual([]);
+  });
+
+  it("rehydrates data persisted by the current version", async () => {
+    // Control for the test above: proves rehydration works at all, so the
+    // empty result there is the migration discarding data, not a no-op.
+    localStorage.setItem(
+      "country-store",
+      JSON.stringify({
+        state: {
+          countries: [
+            { name: "USA", flag: "https://flagcdn.com/us.svg", playerCount: 3, lastUpdated: Date.now() },
+          ],
+        },
+        version: 1,
+      }),
+    );
+
+    await act(async () => {
+      await useCountryStore.persist.rehydrate();
+    });
+
+    expect(useCountryStore.getState().countries.map((c) => c.name)).toEqual(["USA"]);
+  });
+
+  it("expires saved countries older than 24 hours when loading them", async () => {
+    // The page skips its fetch whenever countries are present, so anything
+    // reloaded here is shown as-is. Expiry must apply on load, not only on save.
+    const twoDaysAgo = Date.now() - 48 * 60 * 60 * 1000;
+    localStorage.setItem(
+      "country-store",
+      JSON.stringify({
+        state: {
+          countries: [
+            { name: "Stale", flag: null, playerCount: 1, lastUpdated: twoDaysAgo },
+            { name: "Fresh", flag: null, playerCount: 1, lastUpdated: Date.now() },
+          ],
+        },
+        version: 1,
+      }),
+    );
+
+    await act(async () => {
+      await useCountryStore.persist.rehydrate();
+    });
+
+    expect(useCountryStore.getState().countries.map((c) => c.name)).toEqual(["Fresh"]);
   });
 
   it("shares state across separate consumers of the hook", () => {

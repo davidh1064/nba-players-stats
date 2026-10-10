@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,24 @@ public class PlayerService {
 
     public List<Player> getPlayers() {
         return playerRepository.findAll();
+    }
+
+    /**
+     * Most players first; ties by country name in plain code-point order.
+     *
+     * <p>Why sort here instead of in SQL: ORDER BY on a text column follows the
+     * database's collation, so the same query lists tied countries differently
+     * on a C-collated PostgreSQL, an en_US.UTF-8 one, and H2. Sorting in Java
+     * gives one order everywhere and is testable without a real database.
+     */
+    static final Comparator<CountryPlayerCount> COUNTRY_ORDER =
+            Comparator.comparingLong(CountryPlayerCount::playerCount).reversed()
+                    .thenComparing(CountryPlayerCount::country);
+
+    public List<CountryPlayerCount> getCountryPlayerCounts() {
+        return playerRepository.countPlayersByCountry().stream()
+                .sorted(COUNTRY_ORDER)
+                .toList();
     }
 
     public Player getPlayerById(Long id) {
