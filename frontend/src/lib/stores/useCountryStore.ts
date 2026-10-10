@@ -2,9 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface Country {
-  code: string;
+  /** The dataset's own spelling; also the value sent back as ?country=. */
   name: string;
-  flag: string;
+  /** flagcdn.com image URL, or null when the country has no known flag. */
+  flag: string | null;
   playerCount: number;
   lastUpdated: number;
 }
@@ -13,7 +14,8 @@ interface CountryStore {
   countries: Country[];
   isLoading: boolean;
   error: string | null;
-  setCountries: (countries: Country[]) => void;
+  /** lastUpdated is stamped by the store, so callers do not supply it. */
+  setCountries: (countries: Omit<Country, "lastUpdated">[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearStore: () => void;
@@ -43,6 +45,12 @@ export const useCountryStore = create<CountryStore>()(
     }),
     {
       name: "country-store",
+      // Why versioned: entries saved before version 1 came from restcountries
+      // (its spellings and flag URLs, keyed by a `code` field). Rendering them
+      // would show names the backend cannot query. Discard them rather than
+      // migrate; the page simply refetches.
+      version: 1,
+      migrate: () => ({ countries: [] }),
       partialize: (state) => ({
         countries: state.countries.filter(
           (country) => Date.now() - country.lastUpdated < CACHE_DURATION

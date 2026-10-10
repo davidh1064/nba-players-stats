@@ -1,4 +1,5 @@
 import api from "../api";
+import type { CountryPlayerCount } from "../utils/countryUtils";
 
 export interface Player {
   id: number;
@@ -78,6 +79,18 @@ export const playerService = {
   // Delete player
   deletePlayer: async (id: number) => {
     await api.delete(`/players/${id}`);
+  },
+
+  // Each country in the dataset with its number of distinct players, most
+  // first. One request replaces the old page's ~250 per-country lookups.
+  getCountryCounts: async () => {
+    try {
+      const response = await api.get<CountryPlayerCount[]>("/players/countries");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching country counts:", error);
+      throw error;
+    }
   },
 
   // Fetch players by team
